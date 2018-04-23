@@ -23,14 +23,8 @@ namespace AnitomySharp
   {
     private AnitomySharp() {}
 
-    /// <summary>
-    /// Parses an anime <see cref="filename"/> into its consituent elements.
-    /// </summary>
-    /// <param name="filename">the anime file name</param>
-    /// <returns>the list of parsed elements</returns>
-    public static List<Element> Parse(string filename)
+    public static List<Element> Parse(string filename, Options options)
     {
-      var options = new Options();
       var elements = new List<Element>(32);
       var tokens = new List<Token>();
 
@@ -60,6 +54,16 @@ namespace AnitomySharp
       }
       new Parser(elements, options, tokens).Parse();
       return elements;
+    }
+
+    /// <summary>
+    /// Parses an anime <see cref="filename"/> into its consituent elements.
+    /// </summary>
+    /// <param name="filename">the anime file name</param>
+    /// <returns>the list of parsed elements</returns>
+    public static List<Element> Parse(string filename)
+    {
+      return Parse(filename, new Options());
     }
 
     /// <summary>

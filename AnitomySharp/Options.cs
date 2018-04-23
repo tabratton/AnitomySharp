@@ -22,13 +22,13 @@ namespace AnitomySharp
     public bool ParseFileExtension { get; }
     public bool ParseReleaseGroup { get; }
 
-    public Options()
+    public Options(string delimiters = " _.&+,|", bool episode = true, bool title = true, bool extension = true, bool group = true)
     {
-      AllowedDelimiters = " _.&+,|";
-      ParseEpisodeNumber = true;
-      ParseEpisodeTitle = true;
-      ParseFileExtension = true;
-      ParseReleaseGroup = true;
+      AllowedDelimiters = delimiters;
+      ParseEpisodeNumber = episode;
+      ParseEpisodeTitle = title;
+      ParseFileExtension = extension;
+      ParseReleaseGroup = group;
     }
   }
 }
