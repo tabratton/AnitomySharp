@@ -1,4 +1,22 @@
 ﻿[ {
+  "file_name" : "[TaigaSubs]_Toradora!_(2008)_-_01v2_-_Tiger_and_Dragon_[1280x720_H.264_FLAC][1234ABCD].mkv",
+  "id" : 4224,
+  "ignore" : false,
+  "results" : {
+    "ElementFileName" : "[TaigaSubs]_Toradora!_(2008)_-_01v2_-_Tiger_and_Dragon_[1280x720_H.264_FLAC][1234ABCD]",
+    "ElementAnimeTitle" : "Toradora!",
+    "ElementAnimeYear": "2008",
+    "ElementAudioTerm": "FLAC",
+    "ElementEpisodeNumber": "01",
+    "ElementEpisodeTitle": "Tiger and Dragon",
+    "ElementFileChecksum": "1234ABCD",
+    "ElementFileExtension": "mkv",
+    "ElementReleaseGroup": "TaigaSubs",
+    "ElementReleaseVersion": "2",
+    "ElementVideoResolution": "1280x720",
+    "ElementVideoTerm": "H.264"
+  }
+}, {
   "file_name" : "[ANBU]_Princess_Lover!_-_01_[2048A39A].mkv",
   "id" : 6201,
   "ignore" : false,
@@ -1295,16 +1313,6 @@
     "ElementSource" : "BD",
     "ElementVideoResolution" : "1280x720",
     "ElementVideoTerm" : "AVC"
-  }
-}, {
-  "file_name" : "【MMZYSUB】★【Golden Time】[24（END）][GB][720P_MP4]",
-  "id" : 17895,
-  "ignore" : false,
-  "results" : {
-    "ElementAnimeTitle" : "★",
-    "ElementFileName" : "【MMZYSUB】★【Golden Time】[24（END）][GB][720P_MP4]",
-    "ElementReleaseGroup" : "MMZYSUB",
-    "ElementVideoResolution" : "720P"
   }
 }, {
   "file_name" : "[FFF] Futsuu no Joshikousei ga [Locodol] Yatte Mita. - 01 [BAD09C76].mkv",
