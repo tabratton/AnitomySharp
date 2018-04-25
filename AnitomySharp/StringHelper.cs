@@ -47,14 +47,6 @@ namespace AnitomySharp
     }
 
     /// <summary>
-    /// Returns whether or not the <code>str</code> is an alphanumeric string
-    /// </summary>
-    public static bool IsAlphanumericString(string str)
-    {
-      return str.All(char.IsLetterOrDigit);
-    }
-
-    /// <summary>
     /// Returns whether or not the <code>str</code> is a hex string.
     /// </summary>
     public static bool IsHexadecimalString(string str)

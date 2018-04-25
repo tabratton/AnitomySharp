@@ -44,10 +44,10 @@ namespace AnitomySharp
     /// <param name="tokens">the list of tokens where tokens will be added</param>
     public Tokenizer(string filename, List<Element> elements, Options options, List<Token> tokens)
     {
-      if (filename != null) _filename = filename;
-      if (elements != null) _elements = elements;
-      if (options != null) _options = options;
-      if (tokens != null) _tokens = tokens;
+      _filename = filename;
+      _elements = elements;
+      _options = options;
+      _tokens = tokens;
     }
 
     /// <summary>
@@ -68,8 +68,6 @@ namespace AnitomySharp
     /// <param name="range">the token range</param>
     private void AddToken(Token.TokenCategory category, bool enclosed, TokenRange range)
     {
-//      if (range.Size + range.Offset > _filename.Length) range.Size = _filename.Length - range.Offset;
-//      _tokens.Add(new Token(category, _filename.Substring(range.Offset, range.Size), enclosed));
       _tokens.Add(new Token(category, StringHelper.SubstringWithCheck(_filename, range.Offset, range.Size), enclosed));
     }
 
@@ -88,14 +86,6 @@ namespace AnitomySharp
       {
         delimiters.Append(_filename[i]);
       }
-
-//      for (var i = range.Offset; i < Math.Min(_filename.Length, range.Offset + range.Size); i++)
-//      {
-//        if (IsDelimiter(_filename[i]))
-//        {
-//          delimiters.Append(_filename[i]);
-//        }
-//      }
 
       return delimiters.ToString();
     }
@@ -222,15 +212,6 @@ namespace AnitomySharp
           .Where(c => delimiters.Contains(_filename[c].ToString()))
           .DefaultIfEmpty(end)
           .FirstOrDefault();
-//        int found = end;
-//        for (var j = i; j < Math.Min(end, _filename.Length); j++)
-//        {
-//          if (delimiters.Contains(_filename[j].ToString()))
-//          {
-//            found = j;
-//            break;
-//          }
-//        }
 
         TokenRange subRange = new TokenRange(i, found - i);
         if (subRange.Size > 0)
@@ -257,24 +238,24 @@ namespace AnitomySharp
     /// </summary>
     private void ValidateDelimiterTokens()
     {
-      Func<Result, bool> isDelimiterToken = r =>
+      Func<int, bool> isDelimiterToken = it =>
       {
-        return r != null && r.Token != null && r.Token.Category == Token.TokenCategory.Delimiter;
+        return Token.InListRange(it, _tokens) && _tokens[it].Category == Token.TokenCategory.Delimiter;
       };
 
-      Func<Result, bool> isUnknownToken = r =>
+      Func<int, bool> isUnknownToken = it =>
       {
-        return r != null && r.Token != null && r.Token.Category == Token.TokenCategory.Unknown;
+        return Token.InListRange(it, _tokens) && _tokens[it].Category == Token.TokenCategory.Unknown;
       };
 
-      Func<Result, bool> isSingleCharacterToken = r =>
+      Func<int, bool> isSingleCharacterToken = it =>
       {
-        return isUnknownToken(r) && r.Token.Content.Length == 1 && !r.Token.Content.Equals("-");
+        return isUnknownToken(it) && _tokens[it].Content.Length == 1 && _tokens[it].Content[0] != '-';
       };
 
-      Action<Token, Result> appendTokenTo = (src, dest) =>
+      Action<Token, Token> appendTokenTo = (src, dest) =>
       {
-        dest.Token.Content = dest.Token.Content + src.Content;
+        dest.Content = dest.Content + src.Content;
         src.Category = Token.TokenCategory.Invalid;
       };
 
@@ -284,8 +265,8 @@ namespace AnitomySharp
         if (token.Category != Token.TokenCategory.Delimiter) continue;
         char delimiter = token.Content[0];
 
-        Result prevToken = Token.FindPrevToken(_tokens, i, Token.TokenFlag.FlagValid);
-        Result nextToken = Token.FindNextToken(_tokens, i, Token.TokenFlag.FlagValid);
+        int prevToken = Token.FindPrevToken(_tokens, i, Token.TokenFlag.FlagValid);
+        int nextToken = Token.FindNextToken(_tokens, i, Token.TokenFlag.FlagValid);
 
         // Check for single-character tokens to prevent splitting group names,
         // keywords, episode numbers, etc.
@@ -295,16 +276,16 @@ namespace AnitomySharp
           // Single character token
           if (isSingleCharacterToken(prevToken))
           {
-            appendTokenTo(token, prevToken);
+            appendTokenTo(token, _tokens[prevToken]);
 
             while (isUnknownToken(nextToken))
             {
-              appendTokenTo(nextToken.Token, prevToken);
+              appendTokenTo(_tokens[nextToken], _tokens[prevToken]);
 
               nextToken = Token.FindNextToken(_tokens, i, Token.TokenFlag.FlagValid);
-              if (isDelimiterToken(nextToken) && nextToken.Token.Content[0] == delimiter)
+              if (isDelimiterToken(nextToken) && _tokens[nextToken].Content[0] == delimiter)
               {
-                appendTokenTo(nextToken.Token, prevToken);
+                appendTokenTo(_tokens[nextToken], _tokens[prevToken]);
                 nextToken = Token.FindNextToken(_tokens, nextToken, Token.TokenFlag.FlagValid);
               }
             }
@@ -314,8 +295,8 @@ namespace AnitomySharp
 
           if (isSingleCharacterToken(nextToken))
           {
-            appendTokenTo(token, prevToken);
-            appendTokenTo(nextToken.Token, prevToken);
+            appendTokenTo(token, _tokens[prevToken]);
+            appendTokenTo(_tokens[nextToken], _tokens[prevToken]);
             continue;
           }
         }
@@ -323,12 +304,12 @@ namespace AnitomySharp
         // Check for adjacent delimiters
         if (isUnknownToken(prevToken) && isDelimiterToken(nextToken))
         {
-          var nextDelimiter = nextToken.Token.Content[0];
+          var nextDelimiter = _tokens[nextToken].Content[0];
           if (delimiter != nextDelimiter && delimiter != ',')
           {
             if (nextDelimiter == ' ' || nextDelimiter == '_')
             {
-              appendTokenTo(token, prevToken);
+              appendTokenTo(token, _tokens[prevToken]);
             }
           }
         }

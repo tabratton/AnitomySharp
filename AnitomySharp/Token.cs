@@ -129,71 +129,75 @@ namespace AnitomySharp
     /// Given a list of <code>tokens</code>, searches for any token token that matches the list of <code>flags</code>.
     /// </summary>
     /// <param name="tokens">the list of tokens</param>
-    /// <param name="begin">the search starting position. Inclusive of <code>begin.pos</code></param>
+    /// <param name="begin">the search starting position.</param>
+    /// <param name="end">the search ending position.</param>
     /// <param name="flags">the search flags</param>
     /// <returns>the search result</returns>
-    public static Result FindToken(List<Token> tokens, Result begin, params TokenFlag[] flags)
+    public static int FindToken(List<Token> tokens, int begin, int end, params TokenFlag[] flags)
     {
-      return begin?.Pos == null ? Result.GetEmptyResult() : FindTokenBase(tokens, begin.Pos.Value, i => i < tokens.Count, i => i + 1, flags);
-    }
-
-    /// <summary>
-    /// GIven a list of <code>tokens</code>, searches for any token that matches the list of <code>flags</code>.
-    /// </summary>
-    /// <param name="tokens">the list of tokens</param>
-    /// <param name="flags">the search flags</param>
-    /// <returns>the search result</returns>
-    public static Result FindToken(List<Token> tokens, params TokenFlag[] flags)
-    {
-      return FindTokenBase(tokens, 0, i => i < tokens.Count, i => i + 1, flags);
+      return FindTokenBase(tokens, begin, end, i => i < tokens.Count, i => i + 1, flags);
     }
 
     /// <summary>
     /// Given a list of <code>tokens</code>, searches for the next token in <code>tokens</code> that matches the list of <code>flags</code>.
     /// </summary>
     /// <param name="tokens">the list of tokens</param>
-    /// <param name="position">the search starting position. Exclusive</param>
+    /// <param name="first">the search starting position.</param>
     /// <param name="flags">the search flags</param>
     /// <returns>the search result</returns>
-    public static Result FindNextToken(List<Token> tokens, int position, params TokenFlag[] flags)
+    public static int FindNextToken(List<Token> tokens, int first, params TokenFlag[] flags)
     {
-      return FindTokenBase(tokens, ++position, i => i < tokens.Count, i => i + 1, flags);
-    }
-
-    /// <summary>
-    /// Given a list of <code>tokens</code>, searches for the next token in <code>tokens</code> that matches the list of <code>flags</code>.
-    /// </summary>
-    /// <param name="tokens">the list of tokens</param>
-    /// <param name="position">the search starting position. Exlusive of position.Pos</param>
-    /// <param name="flags">the search flags</param>
-    /// <returns>the search result</returns>
-    public static Result FindNextToken(List<Token> tokens, Result position, params TokenFlag[] flags)
-    {
-      return FindTokenBase(tokens, position.Pos.Value + 1, i => i < tokens.Count, i => i + 1, flags);
+      return FindTokenBase(tokens, first + 1, tokens.Count, i => i < tokens.Count, i => i + 1, flags);
     }
 
     /// <summary>
     /// Given a list of <code>tokens</code>, searches for the previous token in <code>tokens</code> that matches the list of <code>flags</code>.
     /// </summary>
     /// <param name="tokens">the list of tokens</param>
-    /// <param name="position">the search starting position. Exclusive</param>
+    /// <param name="begin">the search starting position. Exclusive of position.Pos</param>
     /// <param name="flags">the search flags</param>
     /// <returns>the search result</returns>
-    public static Result FindPrevToken(List<Token> tokens, int position, params TokenFlag[] flags)
+    public static int FindPrevToken(List<Token> tokens, int begin, params TokenFlag[] flags)
     {
-      return FindTokenBase(tokens, --position, i => i >= 0, i => i - 1, flags);
+      return FindTokenBase(tokens, begin - 1, -1, i => i >= 0, i => i - 1, flags);
+    }
+    
+    /// <summary>
+    /// Given a list of tokens finds the first token that passes <see cref="CheckTokenFlags"/>.
+    /// </summary>
+    /// <param name="tokens">the list of the tokens to search</param>
+    /// <param name="begin">the start index of the search.</param>
+    /// <param name="end">the end index of the search.</param>
+    /// <param name="shouldContinue">a function that returns whether or not we should continue searching</param>
+    /// <param name="next">a function that returns the next search index</param>
+    /// <param name="flags">the flags that each token should be validated against</param>
+    /// <returns>the found token</returns>
+    public static int FindTokenBase(
+      List<Token> tokens,
+      int begin,
+      int end,
+      Func<int, bool> shouldContinue,
+      Func<int, int> next,
+      params TokenFlag[] flags)
+    {
+      var find = new List<TokenFlag>();
+      find.AddRange(flags);
+
+      for (var i = begin; shouldContinue(i); i = next(i))
+      {
+        var token = tokens[i];
+        if (CheckTokenFlags(token, find))
+        {
+          return i;
+        }
+      }
+
+      return end;
     }
 
-    /// <summary>
-    /// Given a list of <code>tokens</code>, searches for the previous token in <code>tokens</code> that matches the list of <code>flags</code>.
-    /// </summary>
-    /// <param name="tokens">the list of tokens</param>
-    /// <param name="position">the search starting position. Exclusive of position.Pos</param>
-    /// <param name="flags">the search flags</param>
-    /// <returns>the search result</returns>
-    public static Result FindPrevToken(List<Token> tokens, Result position, params TokenFlag[] flags)
+    public static bool InListRange(int pos, List<Token> list)
     {
-      return FindTokenBase(tokens, position.Pos.Value - 1, i => i >= 0, i => i - 1, flags);
+      return -1 < pos && pos < list.Count;
     }
 
     public override bool Equals(object o)
@@ -216,70 +220,6 @@ namespace AnitomySharp
     public override string ToString()
     {
       return $"Token{{category={Category}, content='{Content}', enclosed={Enclosed}}}";
-    }
-
-    // PRIVATE API
-
-    /// <summary>
-    /// Given a list of tokens finds the first token that passes <see cref="CheckTokenFlags"/>.
-    /// </summary>
-    /// <param name="tokens">the list of the tokens to search</param>
-    /// <param name="startIdx">the start index of the search. Inclusive</param>
-    /// <param name="shouldContinue">a function that returns whether or not we should continue searching</param>
-    /// <param name="next">a function that returns the next search index</param>
-    /// <param name="flags">the flags that each token should be validated against</param>
-    /// <returns>the found token</returns>
-    public static Result FindTokenBase(
-      List<Token> tokens,
-      int startIdx,
-      Func<int, bool> shouldContinue,
-      Func<int, int> next,
-      params TokenFlag[] flags)
-    {
-      var find = new List<TokenFlag>();
-      find.AddRange(flags);
-
-      for (var i = startIdx; shouldContinue(i); i = next(i))
-      {
-        var token = tokens[i];
-        if (CheckTokenFlags(token, find))
-        {
-          return new Result(token, i);
-        }
-      }
-
-      return new Result(null, null);
-    }
-  }
-
-  /// <summary>
-  /// Search result for finds.
-  /// </summary>
-  public class Result
-  {
-    public Token Token { get; }
-    public int? Pos { get; }
-
-    /// <summary>
-    /// Constructs a new search result.
-    /// </summary>
-    /// <param name="token">the found token</param>
-    /// <param name="searchIndex">the index the token was found</param>
-    public Result(Token token, int? searchIndex)
-    {
-      Token = token;
-      Pos = searchIndex;
-    }
-
-    /** Returns an empty search result. */
-    public static Result GetEmptyResult()
-    {
-      return new Result(null, null);
-    }
-
-    public override string ToString()
-    {
-      return $"Result{{token={Token}, pos={Pos}}}";
     }
   }
 }

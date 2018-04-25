@@ -174,20 +174,20 @@ namespace AnitomySharp
     /// <returns>true if the token precedes the word "of"</returns>
     public bool NumberComesBeforeTotalNumber(Token token, int currentTokenIdx)
     {
-      Result nextToken = Token.FindNextToken(_parser.Tokens, currentTokenIdx, Token.TokenFlag.FlagNotDelimiter);
-      if (nextToken.Token != null)
+      int nextToken = Token.FindNextToken(_parser.Tokens, currentTokenIdx, Token.TokenFlag.FlagNotDelimiter);
+      if (Token.InListRange(nextToken, _parser.Tokens))
       {
-        if (nextToken.Token.Content.Equals("of", StringComparison.InvariantCultureIgnoreCase))
+        if (_parser.Tokens[nextToken].Content.Equals("of", StringComparison.InvariantCultureIgnoreCase))
         {
-          Result otherToken = Token.FindNextToken(_parser.Tokens, nextToken, Token.TokenFlag.FlagNotDelimiter);
+          int otherToken = Token.FindNextToken(_parser.Tokens, nextToken, Token.TokenFlag.FlagNotDelimiter);
 
-          if (otherToken.Token != null)
+          if (Token.InListRange(otherToken, _parser.Tokens))
           {
-            if (StringHelper.IsNumericString(otherToken.Token.Content))
+            if (StringHelper.IsNumericString(_parser.Tokens[otherToken].Content))
             {
               SetEpisodeNumber(token.Content, token, false);
-              nextToken.Token.Category = Token.TokenCategory.Identifier;
-              otherToken.Token.Category = Token.TokenCategory.Identifier;
+              _parser.Tokens[nextToken].Category = Token.TokenCategory.Identifier;
+              _parser.Tokens[otherToken].Category = Token.TokenCategory.Identifier;
               return true;
             }
           }
@@ -580,12 +580,12 @@ namespace AnitomySharp
     /// </summary>
     /// <param name="tokens">the list of tokens</param>
     /// <returns>true if an isolated number was found</returns>
-    public bool SearchForIsolatedNumbers(List<Result> tokens)
+    public bool SearchForIsolatedNumbers(List<int> tokens)
     {
       foreach (var it in tokens)
       {
-        if (!it.Token.Enclosed || !_parser.ParseHelper.IsTokenIsolated(it.Pos.Value)) continue;
-        if (SetEpisodeNumber(it.Token.Content, it.Token, true)) return true;
+        if (!_parser.Tokens[it].Enclosed || !_parser.ParseHelper.IsTokenIsolated(it)) continue;
+        if (SetEpisodeNumber(_parser.Tokens[it].Content, _parser.Tokens[it], true)) return true;
       }
 
       return false;
@@ -596,18 +596,19 @@ namespace AnitomySharp
     /// </summary>
     /// <param name="tokens">the list of tokens</param>
     /// <returns>true fi a separated number was found</returns>
-    public bool SearchForSeparatedNumbers(List<Result> tokens)
+    public bool SearchForSeparatedNumbers(List<int> tokens)
     {
       foreach (var it in tokens)
       {
-        Result previousToken = Token.FindPrevToken(_parser.Tokens, it, Token.TokenFlag.FlagNotDelimiter);
+        int previousToken = Token.FindPrevToken(_parser.Tokens, it, Token.TokenFlag.FlagNotDelimiter);
 
         // See if the number has a preceding "-" separator
-        if (ParserHelper.IsTokenCategory(previousToken.Token, Token.TokenCategory.Unknown) && ParserHelper.IsDashCharacter(previousToken.Token.Content[0]))
+        if (_parser.ParseHelper.IsTokenCategory(previousToken, Token.TokenCategory.Unknown) 
+            && ParserHelper.IsDashCharacter(_parser.Tokens[previousToken].Content[0]))
         {
-          if (SetEpisodeNumber(it.Token.Content, it.Token, true))
+          if (SetEpisodeNumber(_parser.Tokens[it].Content, _parser.Tokens[it], true))
           {
-            previousToken.Token.Category = Token.TokenCategory.Identifier;
+            _parser.Tokens[previousToken].Category = Token.TokenCategory.Identifier;
             return true;
           }
         }
@@ -621,20 +622,20 @@ namespace AnitomySharp
     /// </summary>
     /// <param name="tokens">the list of tokens</param>
     /// <returns>true if an episode number was found</returns>
-    public bool SearchForEpisodePatterns(List<Result> tokens)
+    public bool SearchForEpisodePatterns(List<int> tokens)
     {
       foreach (var it in tokens)
       {
-        var numericFront = it.Token.Content.Length > 0 && char.IsDigit(it.Token.Content[0]);
+        var numericFront = _parser.Tokens[it].Content.Length > 0 && char.IsDigit(_parser.Tokens[it].Content[0]);
 
         if (!numericFront)
         {
           // e.g. "EP.1", "Vol.1"
-          if (NumberComesAfterPrefix(Element.ElementCategory.ElementEpisodePrefix, it.Token))
+          if (NumberComesAfterPrefix(Element.ElementCategory.ElementEpisodePrefix, _parser.Tokens[it]))
           {
             return true;
           }
-          if (NumberComesAfterPrefix(Element.ElementCategory.ElementVolumePrefix, it.Token))
+          if (NumberComesAfterPrefix(Element.ElementCategory.ElementVolumePrefix, _parser.Tokens[it]))
           {
             continue;
           }
@@ -642,14 +643,14 @@ namespace AnitomySharp
         else
         {
           // e.g. "8 of 12"
-          if (NumberComesBeforeTotalNumber(it.Token, it.Pos.Value))
+          if (NumberComesBeforeTotalNumber(_parser.Tokens[it], it))
           {
             return true;
           }
         }
 
         // Look for other patterns
-        if (MatchEpisodePatterns(it.Token.Content, it.Token))
+        if (MatchEpisodePatterns(_parser.Tokens[it].Content, _parser.Tokens[it]))
         {
           return true;
         }
@@ -663,34 +664,34 @@ namespace AnitomySharp
     /// </summary>
     /// <param name="tokens">the list of tokens</param>
     /// <returns>true if an equivalent number was found</returns>
-    public bool SearchForEquivalentNumbers(List<Result> tokens)
+    public bool SearchForEquivalentNumbers(List<int> tokens)
     {
       foreach (var it in tokens)
       {
         // Find number must be isolated.
-        if (_parser.ParseHelper.IsTokenIsolated(it.Pos.Value) || !IsValidEpisodeNumber(it.Token.Content))
+        if (_parser.ParseHelper.IsTokenIsolated(it) || !IsValidEpisodeNumber(_parser.Tokens[it].Content))
         {
           continue;
         }
 
         // Find the first enclosed, non-delimiter token
-        Result nextToken = Token.FindNextToken(_parser.Tokens, it.Pos.Value, Token.TokenFlag.FlagNotDelimiter);
-        if (!ParserHelper.IsTokenCategory(nextToken, Token.TokenCategory.Bracket)) continue;
+        int nextToken = Token.FindNextToken(_parser.Tokens, it, Token.TokenFlag.FlagNotDelimiter);
+        if (!_parser.ParseHelper.IsTokenCategory(nextToken, Token.TokenCategory.Bracket)) continue;
         nextToken = Token.FindNextToken(_parser.Tokens, nextToken, Token.TokenFlag.FlagEnclosed,
           Token.TokenFlag.FlagNotDelimiter);
-        if (!ParserHelper.IsTokenCategory(nextToken, Token.TokenCategory.Unknown)) continue;
+        if (!_parser.ParseHelper.IsTokenCategory(nextToken, Token.TokenCategory.Unknown)) continue;
 
         // Check if it's an isolated number
-        if (!_parser.ParseHelper.IsTokenIsolated(nextToken.Pos.Value)
-          || !StringHelper.IsNumericString(nextToken.Token.Content)
-          || !IsValidEpisodeNumber(nextToken.Token.Content))
+        if (!_parser.ParseHelper.IsTokenIsolated(nextToken)
+          || !StringHelper.IsNumericString(_parser.Tokens[nextToken].Content)
+          || !IsValidEpisodeNumber(_parser.Tokens[nextToken].Content))
         {
           continue;
         }
 
         var list = new List<Token>
         {
-          it.Token, nextToken.Token
+          _parser.Tokens[it], _parser.Tokens[nextToken]
         };
 
         list.Sort((o1, o2) => 
@@ -708,7 +709,7 @@ namespace AnitomySharp
     /// </summary>
     /// <param name="tokens">the list of tokens</param>
     /// <returns>true if the last number token was found</returns>
-    public bool SearchForLastNumber(List<Result> tokens)
+    public bool SearchForLastNumber(List<int> tokens)
     {
       for (var i = tokens.Count - 1; i >= 0; i--)
       {
@@ -716,27 +717,28 @@ namespace AnitomySharp
 
         // Assuming that episode number always comes after the title,
         // the first token cannot be what we're looking for
-        if (it.Pos.Value == 0) continue;
-        if (it.Token.Enclosed) continue;
+        if (it == 0) continue;
+        if (_parser.Tokens[it].Enclosed) continue;
 
         // Ignore if it's the first non-enclosed, non-delimiter token
-        if (_parser.Tokens.GetRange(0, it.Pos.Value)
+        if (_parser.Tokens.GetRange(0, it)
           .All(r => r.Enclosed || r.Category == Token.TokenCategory.Delimiter))
         {
           continue;
         }
 
         var previousToken = Token.FindPrevToken(_parser.Tokens, it, Token.TokenFlag.FlagNotDelimiter);
-        if (ParserHelper.IsTokenCategory(previousToken, Token.TokenCategory.Unknown))
+        if (_parser.ParseHelper.IsTokenCategory(previousToken, Token.TokenCategory.Unknown))
         {
-          if (previousToken.Token.Content.Equals("Movie", StringComparison.InvariantCultureIgnoreCase) || previousToken.Token.Content.Equals("Part", StringComparison.InvariantCultureIgnoreCase))
+          if (_parser.Tokens[previousToken].Content.Equals("Movie", StringComparison.InvariantCultureIgnoreCase) 
+              || _parser.Tokens[previousToken].Content.Equals("Part", StringComparison.InvariantCultureIgnoreCase))
           {
             continue;
           }
         }
 
         // We'll use this number after all
-        if (SetEpisodeNumber(it.Token.Content, it.Token, true))
+        if (SetEpisodeNumber(_parser.Tokens[it].Content, _parser.Tokens[it], true))
         {
           return true;
         }

@@ -141,14 +141,14 @@ namespace AnitomySharp
     private void SearchForEpisodeNumber()
     {
       // List all unknown tokens that contain a number
-      List<Result> tokens = new List<Result>();
+      List<int> tokens = new List<int>();
       for (var i = 0; i < Tokens.Count; i++)
       {
         var token = Tokens[i];
         if (token.Category == Token.TokenCategory.Unknown &&
             ParserHelper.IndexOfFirstDigit(token.Content) != -1)
         {
-          tokens.Add(new Result(token, i));
+          tokens.Add(i);
         }
       }
 
@@ -163,7 +163,7 @@ namespace AnitomySharp
       if (!Empty(Element.ElementCategory.ElementEpisodeNumber)) return;
 
       // From now on, we're only interested in numeric tokens
-      tokens.RemoveAll(r => !StringHelper.IsNumericString(r.Token.Content));
+      tokens.RemoveAll(r => !StringHelper.IsNumericString(Tokens[r].Content));
 
       // e.g. "01 (176)", "29 (04)"
       if (ParseNumber.SearchForEquivalentNumbers(tokens)) return;
@@ -185,40 +185,41 @@ namespace AnitomySharp
     {
       var enclosedTitle = false;
 
-      var tokenBegin = Token.FindToken(Tokens, Token.TokenFlag.FlagNotEnclosed, Token.TokenFlag.FlagUnknown);
+      var tokenBegin = Token.FindToken(Tokens, 0, Tokens.Count, Token.TokenFlag.FlagNotEnclosed, Token.TokenFlag.FlagUnknown);
 
       // If that doesn't work, find the first unknown token in the second enclosed
       // group, assuming that the first one is the release group
-      if (tokenBegin.Token == null)
+      if (!Token.InListRange(tokenBegin, Tokens))
       {
-        tokenBegin = new Result(null, 0);
+        tokenBegin = 0;
         enclosedTitle = true;
         var skippedPreviousGroup = false;
 
         do
         {
-          tokenBegin = Token.FindToken(Tokens, tokenBegin, Token.TokenFlag.FlagUnknown);
-          if (tokenBegin.Token == null) break;
+          tokenBegin = Token.FindToken(Tokens, tokenBegin, Tokens.Count, Token.TokenFlag.FlagUnknown);
+          if (!Token.InListRange(tokenBegin, Tokens)) break;
 
           // Ignore groups that are composed of non-Latin characters
-          if (StringHelper.IsMostlyLatinString(tokenBegin.Token.Content) && skippedPreviousGroup)
+          if (StringHelper.IsMostlyLatinString(Tokens[tokenBegin].Content) && skippedPreviousGroup)
           {
             break;
           }
 
           // Get the first unknown token of the next group
-          tokenBegin = Token.FindToken(Tokens, tokenBegin, Token.TokenFlag.FlagBracket);
-          tokenBegin = Token.FindToken(Tokens, tokenBegin, Token.TokenFlag.FlagUnknown);
+          tokenBegin = Token.FindToken(Tokens, tokenBegin, Tokens.Count, Token.TokenFlag.FlagBracket);
+          tokenBegin = Token.FindToken(Tokens, tokenBegin, Tokens.Count, Token.TokenFlag.FlagUnknown);
           skippedPreviousGroup = true;
-        } while (tokenBegin.Token != null);
+        } while (Token.InListRange(tokenBegin, Tokens));
       }
 
-      if (tokenBegin.Token == null) return;
+      if (!Token.InListRange(tokenBegin, Tokens)) return;
 
       // Continue until an identifier (or a bracket, if the title is enclosed) is found
       var tokenEnd = Token.FindToken(
         Tokens,
         tokenBegin,
+        Tokens.Count,
         Token.TokenFlag.FlagIdentifier,
         enclosedTitle ? Token.TokenFlag.FlagBracket : Token.TokenFlag.FlagNone);
 
@@ -226,15 +227,13 @@ namespace AnitomySharp
       // move the upper endpoint back to the bracket
       if (!enclosedTitle)
       {
-        var end = tokenEnd.Pos != null ? tokenEnd.Pos.Value : Tokens.Count;
         var lastBracket = tokenEnd;
         var bracketOpen = false;
-        for (var i = tokenBegin.Pos; i < end; i++)
+        for (var i = tokenBegin; i < tokenEnd; i++)
         {
-          var token = Tokens[i.Value];
-          if (token.Category == Token.TokenCategory.Bracket)
+          if (Tokens[i].Category == Token.TokenCategory.Bracket)
           {
-            lastBracket = new Result(token, i);
+            lastBracket = i;
             bracketOpen = !bracketOpen;
           }
         }
@@ -247,13 +246,12 @@ namespace AnitomySharp
       // parenthese in order to keep certain groups (e.g. "(TV)") intact.
       if (!enclosedTitle)
       {
-        var end = tokenEnd.Pos != null ? tokenEnd.Pos.Value : Tokens.Count;
-        var token = Token.FindPrevToken(Tokens, end, Token.TokenFlag.FlagNotDelimiter);
+        var token = Token.FindPrevToken(Tokens, tokenEnd, Token.TokenFlag.FlagNotDelimiter);
 
-        while (ParserHelper.IsTokenCategory(token.Token, Token.TokenCategory.Bracket) && token.Token.Content[0] != ')')
+        while (ParseHelper.IsTokenCategory(token, Token.TokenCategory.Bracket) && Tokens[token].Content[0] != ')')
         {
           token = Token.FindPrevToken(Tokens, token, Token.TokenFlag.FlagBracket);
-          if (token.Pos != null)
+          if (Token.InListRange(token, Tokens))
           {
             tokenEnd = token;
             token = Token.FindPrevToken(Tokens, tokenEnd, Token.TokenFlag.FlagNotDelimiter);
@@ -261,9 +259,7 @@ namespace AnitomySharp
         }
       }
 
-      var endPos = Tokens.Count;
-      if (tokenEnd.Token != null) endPos = Math.Min(tokenEnd.Pos.Value, endPos);
-      ParseHelper.BuildElement(Element.ElementCategory.ElementAnimeTitle, false, Tokens.GetRange(tokenBegin.Pos.Value, endPos - tokenBegin.Pos.Value));
+      ParseHelper.BuildElement(Element.ElementCategory.ElementAnimeTitle, false, Tokens.GetRange(tokenBegin, tokenEnd - tokenBegin));
     }
 
     /// <summary>
@@ -271,24 +267,21 @@ namespace AnitomySharp
     /// </summary>
     private void SearchForReleaseGroup()
     {
-      for (Result tokenBegin = new Result(null, 0), tokenEnd = tokenBegin;
-        tokenBegin.Pos != null && tokenBegin.Pos.Value < Tokens.Count;)
+      for (int tokenBegin = 0, tokenEnd = tokenBegin; tokenBegin < Tokens.Count;)
       {
         // Find the first enclosed unknown token
-        tokenBegin = Token.FindToken(Tokens, tokenEnd, Token.TokenFlag.FlagEnclosed, Token.TokenFlag.FlagUnknown);
-        if (tokenBegin.Token == null) return;
+        tokenBegin = Token.FindToken(Tokens, tokenEnd, Tokens.Count, Token.TokenFlag.FlagEnclosed, Token.TokenFlag.FlagUnknown);
+        if (!Token.InListRange(tokenBegin, Tokens)) return;
 
         // Continue until a bracket or identifier is found
-        tokenEnd = Token.FindToken(Tokens, tokenBegin, Token.TokenFlag.FlagBracket, Token.TokenFlag.FlagIdentifier);
-        if (tokenEnd.Token == null || tokenEnd.Token.Category != Token.TokenCategory.Bracket) continue;
+        tokenEnd = Token.FindToken(Tokens, tokenBegin, Tokens.Count, Token.TokenFlag.FlagBracket, Token.TokenFlag.FlagIdentifier);
+        if (!Token.InListRange(tokenEnd, Tokens) || Tokens[tokenEnd].Category != Token.TokenCategory.Bracket) continue;
 
         // Ignore if it's not the first non-delimiter token in group
         var prevToken = Token.FindPrevToken(Tokens, tokenBegin, Token.TokenFlag.FlagNotDelimiter);
-        if (prevToken.Token != null && prevToken.Token.Category != Token.TokenCategory.Bracket) continue;
+        if (Token.InListRange(prevToken, Tokens) && Tokens[prevToken].Category != Token.TokenCategory.Bracket) continue;
 
-        var end = Tokens.Count;
-        end = Math.Min(tokenEnd.Pos.Value, end);
-        ParseHelper.BuildElement(Element.ElementCategory.ElementReleaseGroup, true, Tokens.GetRange(tokenBegin.Pos.Value, end - tokenBegin.Pos.Value));
+        ParseHelper.BuildElement(Element.ElementCategory.ElementReleaseGroup, true, Tokens.GetRange(tokenBegin, tokenEnd - tokenBegin));
         return;
       }
     }
@@ -298,16 +291,24 @@ namespace AnitomySharp
     /// </summary>
     private void SearchForEpisodeTitle()
     {
-      // Find the first non-enclosed unknown token
-      var tokenBegin = Token.FindToken(Tokens, Token.TokenFlag.FlagNotEnclosed, Token.TokenFlag.FlagUnknown);
-      if (tokenBegin.Token == null) return;
+      int tokenBegin;
+      var tokenEnd = 0;
 
-      // Continue until a bracket or identifier is found
-      var tokenEnd = Token.FindToken(Tokens, tokenBegin, Token.TokenFlag.FlagBracket, Token.TokenFlag.FlagIdentifier);
+      do
+      {
+        // Find the first non-enclosed unknown token
+        tokenBegin = Token.FindToken(Tokens, tokenEnd, Tokens.Count, Token.TokenFlag.FlagNotEnclosed, Token.TokenFlag.FlagUnknown);
+        if (!Token.InListRange(tokenBegin, Tokens)) return;
 
-      var end = Tokens.Count;
-      if (tokenEnd.Pos != null) end = Math.Min(tokenEnd.Pos.Value, end);
-      ParseHelper.BuildElement(Element.ElementCategory.ElementEpisodeTitle, false, Tokens.GetRange(tokenBegin.Pos.Value, end - tokenBegin.Pos.Value));
+        // Continue until a bracket or identifier is found
+        tokenEnd = Token.FindToken(Tokens, tokenBegin, Tokens.Count, Token.TokenFlag.FlagBracket, Token.TokenFlag.FlagIdentifier);
+
+        // Ignore if it's only a dash
+        if (tokenEnd - tokenBegin <= 2 && ParserHelper.IsDashCharacter(Tokens[tokenBegin].Content[0])) continue;
+        //if (tokenBegin.Pos == null || tokenEnd.Pos == null) continue;
+        ParseHelper.BuildElement(Element.ElementCategory.ElementEpisodeTitle, false, Tokens.GetRange(tokenBegin, tokenEnd - tokenBegin));
+        return;
+      } while (Token.InListRange(tokenBegin, Tokens));
     }
 
     /// <summary>

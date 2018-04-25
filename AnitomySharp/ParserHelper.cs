@@ -45,17 +45,9 @@ namespace AnitomySharp
     /// <summary>
     /// Returns whether or not the <code>result</code> matches the <code>category</code>.
     /// </summary>
-    public static bool IsTokenCategory(Result result, Token.TokenCategory category)
+    public bool IsTokenCategory(int result, Token.TokenCategory category)
     {
-      return result != null && result.Token != null && result.Token.Category == category;
-    }
-
-    /// <summary>
-    /// Returns whether or not the <code>token</code> matches the <code>category</code>.
-    /// </summary>
-    public static bool IsTokenCategory(Token token, Token.TokenCategory category)
-    {
-      return token != null && token.Category == category;
+      return Token.InListRange(result, _parser.Tokens) && _parser.Tokens[result].Category == category;
     }
 
     /// <summary>
@@ -193,9 +185,9 @@ namespace AnitomySharp
     /// </summary>
     public bool IsTokenIsolated(int pos)
     {
-      Result prevToken = Token.FindPrevToken(_parser.Tokens, pos, Token.TokenFlag.FlagNotDelimiter);
+      int prevToken = Token.FindPrevToken(_parser.Tokens, pos, Token.TokenFlag.FlagNotDelimiter);
       if (!IsTokenCategory(prevToken, Token.TokenCategory.Bracket)) return false;
-      Result nextToken = Token.FindNextToken(_parser.Tokens, pos, Token.TokenFlag.FlagNotDelimiter);
+      int nextToken = Token.FindNextToken(_parser.Tokens, pos, Token.TokenFlag.FlagNotDelimiter);
       return IsTokenCategory(nextToken, Token.TokenCategory.Bracket);
     }
 
@@ -211,21 +203,21 @@ namespace AnitomySharp
         second.Category = Token.TokenCategory.Identifier;
       };
 
-      Result previousToken = Token.FindPrevToken(_parser.Tokens, currentTokenPos, Token.TokenFlag.FlagNotDelimiter);
-      if (previousToken.Token != null)
+      int previousToken = Token.FindPrevToken(_parser.Tokens, currentTokenPos, Token.TokenFlag.FlagNotDelimiter);
+      if (Token.InListRange(previousToken, _parser.Tokens))
       {
-        var number = GetNumberFromOrdinal(previousToken.Token.Content);
+        var number = GetNumberFromOrdinal(_parser.Tokens[previousToken].Content);
         if (!string.IsNullOrEmpty(number))
         {
-          setAnimeSeason(previousToken.Token, token, number);
+          setAnimeSeason(_parser.Tokens[previousToken], token, number);
           return true;
         }
       }
 
-      Result nextToken = Token.FindNextToken(_parser.Tokens, currentTokenPos, Token.TokenFlag.FlagNotDelimiter);
-      if (nextToken.Token != null && StringHelper.IsNumericString(nextToken.Token.Content))
+      int nextToken = Token.FindNextToken(_parser.Tokens, currentTokenPos, Token.TokenFlag.FlagNotDelimiter);
+      if (Token.InListRange(nextToken, _parser.Tokens) && StringHelper.IsNumericString(_parser.Tokens[nextToken].Content))
       {
-        setAnimeSeason(token, nextToken.Token, nextToken.Token.Content);
+        setAnimeSeason(token, _parser.Tokens[nextToken], _parser.Tokens[nextToken].Content);
         return true;
       }
 
@@ -241,23 +233,23 @@ namespace AnitomySharp
     /// <returns>true if we found the volume/episode number</returns>
     public bool CheckExtentKeyword(Element.ElementCategory category, int currentTokenPos, Token token)
     {
-      Result nToken = Token.FindNextToken(_parser.Tokens, currentTokenPos, Token.TokenFlag.FlagNotDelimiter);
-      if (IsTokenCategory(nToken.Token, Token.TokenCategory.Unknown))
+      int nToken = Token.FindNextToken(_parser.Tokens, currentTokenPos, Token.TokenFlag.FlagNotDelimiter);
+      if (IsTokenCategory(nToken, Token.TokenCategory.Unknown))
       {
-        if (IndexOfFirstDigit(nToken.Token.Content) == 0)
+        if (IndexOfFirstDigit(_parser.Tokens[nToken].Content) == 0)
         {
           switch (category)
           {
             case Element.ElementCategory.ElementEpisodeNumber:
-              if (!_parser.ParseNumber.MatchEpisodePatterns(nToken.Token.Content, nToken.Token))
+              if (!_parser.ParseNumber.MatchEpisodePatterns(_parser.Tokens[nToken].Content, _parser.Tokens[nToken]))
               {
-                _parser.ParseNumber.SetEpisodeNumber(nToken.Token.Content, nToken.Token, false);
+                _parser.ParseNumber.SetEpisodeNumber(_parser.Tokens[nToken].Content, _parser.Tokens[nToken], false);
               }
               break;
             case Element.ElementCategory.ElementVolumeNumber:
-              if (!_parser.ParseNumber.MatchVolumePatterns(nToken.Token.Content, nToken.Token))
+              if (!_parser.ParseNumber.MatchVolumePatterns(_parser.Tokens[nToken].Content, _parser.Tokens[nToken]))
               {
-                _parser.ParseNumber.SetVolumeNumber(nToken.Token.Content, nToken.Token, false);
+                _parser.ParseNumber.SetVolumeNumber(_parser.Tokens[nToken].Content, _parser.Tokens[nToken], false);
               }
               break;
           }
@@ -298,7 +290,7 @@ namespace AnitomySharp
             {
               element.Append(delimiter);
             } 
-            else if (i > 0 && i < tokens.Count - 1)
+            else if (Token.InListRange(i, tokens))
             {
               switch (delimiter)
               {
