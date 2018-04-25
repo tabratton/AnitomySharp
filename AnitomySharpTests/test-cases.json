@@ -2339,4 +2339,14 @@
     "ElementVideoTerm" : "10bit",
     "ElementVolumeNumber" : [ "1", "2"]
   }
+}, {
+
+  "file_name": "[Infantjedi] Norn9 - Norn + Nonetto - 12",
+  "id": 31452,
+  "ignore": false,
+  "results": {
+    "ElementAnimeTitle": "Norn9 - Norn + Nonetto",
+    "ElementEpisodeNumber": "12",
+    "ElementReleaseGroup": "Infantjedi"
+  }
 } ]

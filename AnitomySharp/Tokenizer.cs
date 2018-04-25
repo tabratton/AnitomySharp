@@ -313,6 +313,15 @@ namespace AnitomySharp
             }
           }
         }
+        else if (isDelimiterToken(prevToken) && isDelimiterToken(nextToken))
+        {
+          var prevDelimiter = _tokens[prevToken].Content[0];
+          var nextDelimiter = _tokens[nextToken].Content[0];
+          if (prevDelimiter == nextDelimiter && prevDelimiter != delimiter)
+          {
+            token.Category = Token.TokenCategory.Unknown; // e.g. "& in "_&_"
+          }
+        }
       }
 
       // Remove invalid tokens
