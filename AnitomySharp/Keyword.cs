@@ -182,7 +182,8 @@ namespace AnitomySharp
       {
         return false;
       }
-      else if (category == Element.ElementCategory.ElementUnknown)
+      
+      if (category == Element.ElementCategory.ElementUnknown)
       {
         category = foundEntry.Category;
       } 
@@ -270,10 +271,10 @@ namespace AnitomySharp
   /// <summary>
   /// A Keyword
   /// </summary>
-  public class Keyword
+  public struct Keyword
   {
-    public Element.ElementCategory Category { get; }
-    public KeywordOptions Options { get; }
+    public readonly Element.ElementCategory Category;
+    public readonly KeywordOptions Options;
 
     /// <summary>
     /// Constructs a new Keyword

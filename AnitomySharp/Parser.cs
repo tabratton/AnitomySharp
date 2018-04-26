@@ -129,7 +129,7 @@ namespace AnitomySharp
         if (category != Element.ElementCategory.ElementUnknown)
         {
           Elements.Add(new Element(category, word));
-          if (options != null && options.Identifiable)
+          if (options.Identifiable)
           {
             token.Category = Token.TokenCategory.Identifier;
           }

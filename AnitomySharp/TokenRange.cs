@@ -10,10 +10,10 @@
 
 namespace AnitomySharp
 {
-    public class TokenRange
+    public struct TokenRange
     {
-      public int Offset { get; set; }
-      public int Size { get; set; }
+	    public int Offset;
+	    public int Size;
 
       public TokenRange(int offset, int size)
       {
