@@ -2349,4 +2349,23 @@
     "ElementEpisodeNumber": "12",
     "ElementReleaseGroup": "Infantjedi"
   }
+},
+  {
+	"file_name": "Dragon_Ball_Z_Movies_8_&_10_[720p,BluRay,DTS,x264]_-_THORA",
+	"id": [
+		901,
+		903
+	],
+    "results": {
+      "ElementAnimeTitle": "Dragon Ball Z Movies",
+      "ElementAudioTerm": "DTS",
+      "ElementReleaseGroup": "THORA",
+      "ElementSource": "BluRay",
+      "ElementVideoResolution": "720p",
+      "ElementVideoTerm": "x264",
+      "ElementEpisodeNumber": [
+        "8",
+        "10"
+      ]
+    }
 } ]

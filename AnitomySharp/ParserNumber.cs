@@ -172,21 +172,33 @@ namespace AnitomySharp
     /// <param name="token">the token</param>
     /// <param name="currentTokenIdx">the index of the token</param>
     /// <returns>true if the token precedes the word "of"</returns>
-    public bool NumberComesBeforeTotalNumber(Token token, int currentTokenIdx)
+    public bool NumberComesBeforeAnotherNumber(Token token, int currentTokenIdx)
     {
-      int nextToken = Token.FindNextToken(_parser.Tokens, currentTokenIdx, Token.TokenFlag.FlagNotDelimiter);
-      if (Token.InListRange(nextToken, _parser.Tokens))
+      int separatorToken = Token.FindNextToken(_parser.Tokens, currentTokenIdx, Token.TokenFlag.FlagNotDelimiter);
+      
+      if (Token.InListRange(separatorToken, _parser.Tokens))
       {
-        if (_parser.Tokens[nextToken].Content.Equals("of", StringComparison.InvariantCultureIgnoreCase))
+        List<Tuple<string, bool>> separators = new List<Tuple<string, bool>>
         {
-          int otherToken = Token.FindNextToken(_parser.Tokens, nextToken, Token.TokenFlag.FlagNotDelimiter);
-
-          if (Token.InListRange(otherToken, _parser.Tokens))
+          Tuple.Create("&", true),
+          Tuple.Create("of", false)
+        };
+        
+        foreach (var separator in separators)
+        {
+          if (_parser.Tokens[separatorToken].Content == separator.Item1)
           {
-            if (StringHelper.IsNumericString(_parser.Tokens[otherToken].Content))
+            var otherToken = Token.FindNextToken(_parser.Tokens, separatorToken, Token.TokenFlag.FlagNotDelimiter);
+            if (Token.InListRange(otherToken, _parser.Tokens) &&
+                StringHelper.IsNumericString(_parser.Tokens[otherToken].Content))
             {
               SetEpisodeNumber(token.Content, token, false);
-              _parser.Tokens[nextToken].Category = Token.TokenCategory.Identifier;
+              if (separator.Item2)
+              {
+                SetEpisodeNumber(_parser.Tokens[otherToken].Content, _parser.Tokens[otherToken], false);
+              }
+
+              _parser.Tokens[separatorToken].Category = Token.TokenCategory.Identifier;
               _parser.Tokens[otherToken].Category = Token.TokenCategory.Identifier;
               return true;
             }
@@ -642,8 +654,8 @@ namespace AnitomySharp
         }
         else
         {
-          // e.g. "8 of 12"
-          if (NumberComesBeforeTotalNumber(_parser.Tokens[it], it))
+          // e.g. "8 & 10", "01 of 24"
+          if (NumberComesBeforeAnotherNumber(_parser.Tokens[it], it))
           {
             return true;
           }

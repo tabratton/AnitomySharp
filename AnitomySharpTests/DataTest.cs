@@ -44,12 +44,11 @@ namespace AnitomySharpTests
     {
       var fileName = entry.FileName;
       var ignore = entry.Ignore;
-      var id = entry.Id;
       var testCases = entry.Results;
 
       if (ignore || string.IsNullOrWhiteSpace(fileName) || testCases.Count == 0)
       {
-        Console.WriteLine($@"Ignoring [{fileName}] : {{ id: {id} | results: {testCases.Count} | explicit: {ignore}}}");
+        Console.WriteLine($@"Ignoring [{fileName}] : {{ results: {testCases.Count} | explicit: {ignore}}}");
         return;
       }
 
@@ -117,9 +116,6 @@ namespace AnitomySharpTests
   {
     [JsonProperty("file_name")]
     public string FileName { get; set; }
-
-    [JsonProperty("id")]
-    public int Id { get; set; }
 
     [JsonProperty("ignore")]
     public bool Ignore { get; set; }
