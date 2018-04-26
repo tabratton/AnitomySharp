@@ -205,7 +205,7 @@ namespace AnitomySharp
     public void PeekAndAdd(string filename, TokenRange range, List<Element> elements,
       List<TokenRange> preidentifiedTokens)
     {
-      int endR = range.Offset + range.Size;
+      var endR = range.Offset + range.Size;
       var search = filename.Substring(range.Offset, endR > filename.Length ? filename.Length - range.Offset : endR - range.Offset);
       foreach (var entry in PeekEntries)
       {

@@ -21,12 +21,12 @@ namespace AnitomySharp
   /// </summary>
   public class ParserNumber
   {
-    public static readonly int AnimeYearMin = 1900;
-    public static readonly int AnimeYearMax = 2050;
-    public static readonly int EpisodeNumberMax = AnimeYearMax - 1;
-    public static readonly int VolumeNumberMax = 20;
-    private static readonly string regexMatchOnlyStart = @"\A(?:";
-    private static readonly string regexMatchOnlyEnd = @")\z";
+    public const int AnimeYearMin = 1900;
+    public const int AnimeYearMax = 2100;
+    private const int EpisodeNumberMax = AnimeYearMax - 1;
+    private const int VolumeNumberMax = 50;
+    private const string RegexMatchOnlyStart = @"\A(?:";
+    private const string RegexMatchOnlyEnd = @")\z";
 
     private readonly Parser _parser;
 
@@ -38,7 +38,7 @@ namespace AnitomySharp
     /// <summary>
     /// Returns whether or not the <code>number</code> is a volume number
     /// </summary>
-    public bool IsValidVolumeNumber(string number)
+    private static bool IsValidVolumeNumber(string number)
     {
       return StringHelper.StringToInt(number) <= VolumeNumberMax;
     }
@@ -46,7 +46,7 @@ namespace AnitomySharp
     /// <summary>
     /// Returns whether or not the <code>number</code> is a valid episode number.
     /// </summary>
-    public bool IsValidEpisodeNumber(string number)
+    private static bool IsValidEpisodeNumber(string number)
     {
       // Eliminate non numeric portion of number, then parse as double.
       var temp = "";
@@ -61,7 +61,7 @@ namespace AnitomySharp
     /// <summary>
     /// Sets the alternative episode number.
     /// </summary>
-    public bool SetAlternativeEpisodeNumber(string number, Token token)
+    private bool SetAlternativeEpisodeNumber(string number, Token token)
     {
       _parser.Elements.Add(new Element(Element.ElementCategory.ElementEpisodeNumberAlt, number));
       token.Category = Token.TokenCategory.Identifier;
@@ -77,16 +77,11 @@ namespace AnitomySharp
     /// <returns>true if the volume number was set</returns>
     public bool SetVolumeNumber(string number, Token token, bool validate)
     {
-      if (validate && !IsValidVolumeNumber(number))
-      {
-        return false;
-      }
-      else
-      {
-        _parser.Elements.Add(new Element(Element.ElementCategory.ElementVolumeNumber, number));
-        token.Category = Token.TokenCategory.Identifier;
-        return true;
-      }
+      if (validate && !IsValidVolumeNumber(number)) return false;
+
+      _parser.Elements.Add(new Element(Element.ElementCategory.ElementVolumeNumber, number));
+      token.Category = Token.TokenCategory.Identifier;
+      return true;
     }
 
     /// <summary>
@@ -110,7 +105,7 @@ namespace AnitomySharp
           if (element.Category != Element.ElementCategory.ElementEpisodeNumber) continue;
 
           /** The larger number gets to be the alternative one */
-          int comparison = StringHelper.StringToInt(number) - StringHelper.StringToInt(element.Value);
+          var comparison = StringHelper.StringToInt(number) - StringHelper.StringToInt(element.Value);
           if (comparison > 0)
           {
             category = Element.ElementCategory.ElementEpisodeNumberAlt;
@@ -138,7 +133,7 @@ namespace AnitomySharp
     /// <param name="category">the category to set if a number follows the <code>token</code></param>
     /// <param name="token">the token</param>
     /// <returns>true if a number follows the token; false otherwise</returns>
-    public bool NumberComesAfterPrefix(Element.ElementCategory category, Token token)
+    private bool NumberComesAfterPrefix(Element.ElementCategory category, Token token)
     {
       var numberBegin = ParserHelper.IndexOfFirstDigit(token.Content);
       var prefix = StringHelper.SubstringWithCheck(token.Content, 0, numberBegin).ToUpperInvariant();
@@ -172,9 +167,9 @@ namespace AnitomySharp
     /// <param name="token">the token</param>
     /// <param name="currentTokenIdx">the index of the token</param>
     /// <returns>true if the token precedes the word "of"</returns>
-    public bool NumberComesBeforeAnotherNumber(Token token, int currentTokenIdx)
+    private bool NumberComesBeforeAnotherNumber(Token token, int currentTokenIdx)
     {
-      int separatorToken = Token.FindNextToken(_parser.Tokens, currentTokenIdx, Token.TokenFlag.FlagNotDelimiter);
+      var separatorToken = Token.FindNextToken(_parser.Tokens, currentTokenIdx, Token.TokenFlag.FlagNotDelimiter);
       
       if (Token.InListRange(separatorToken, _parser.Tokens))
       {
@@ -234,12 +229,14 @@ namespace AnitomySharp
           return true;
         }
         // e.g. "01-02", "03-05v2"
-        else if (MatchMultiEpisodePattern(word, token))
+
+        if (MatchMultiEpisodePattern(word, token))
         {
           return true;
         }
         // e.g. "07.5"
-        else if (MatchFractionalEpisodePattern(word, token))
+
+        if (MatchFractionalEpisodePattern(word, token))
         {
           return true;
         }
@@ -253,7 +250,8 @@ namespace AnitomySharp
           return true;
         }
         // e.g. "#01", "#02-03v2"
-        else if (MatchNumberSignPattern(word, token))
+
+        if (MatchNumberSignPattern(word, token))
         {
           return true;
         }
@@ -272,11 +270,7 @@ namespace AnitomySharp
       }
       
       // U+8A71 is used as counter for stories, episodes of TV series, etc.
-      if (numericFront && MatchJapaneseCounterPattern(word, token))
-      {
-        return true;
-      }
-      return false;
+      return numericFront && MatchJapaneseCounterPattern(word, token);
     }
 
     /// <summary>
@@ -285,19 +279,16 @@ namespace AnitomySharp
     /// <param name="word">the word</param>
     /// <param name="token">the token</param>
     /// <returns>true if the token matched</returns>
-    public bool MatchSingleEpisodePattern(string word, Token token)
+    private bool MatchSingleEpisodePattern(string word, Token token)
     {
-      var regexPattern = regexMatchOnlyStart + @"(\d{1,3})[vV](\d)" + regexMatchOnlyEnd;
+      const string regexPattern = RegexMatchOnlyStart + @"(\d{1,3})[vV](\d)" + RegexMatchOnlyEnd;
       var match = Regex.Match(word, regexPattern);
 
-      if (match.Success)
-      {
-        SetEpisodeNumber(match.Groups[1].Value, token, false);
-        _parser.Elements.Add(new Element(Element.ElementCategory.ElementReleaseVersion, match.Groups[2].Value));
-        return true;
-      }
-
-      return false;
+      if (!match.Success) return false;
+      
+      SetEpisodeNumber(match.Groups[1].Value, token, false);
+      _parser.Elements.Add(new Element(Element.ElementCategory.ElementReleaseVersion, match.Groups[2].Value));
+      return true;
     }
 
     /// <summary>
@@ -306,31 +297,30 @@ namespace AnitomySharp
     /// <param name="word">the word</param>
     /// <param name="token">the token</param>
     /// <returns>true if the token matched</returns>
-    public bool MatchMultiEpisodePattern(string word, Token token)
+    private bool MatchMultiEpisodePattern(string word, Token token)
     {
-      var regexPattern = regexMatchOnlyStart + @"(\d{1,3})(?:[vV](\d))?[-~&+](\d{1,3})(?:[vV](\d))?" + regexMatchOnlyEnd;
+      const string regexPattern = RegexMatchOnlyStart + @"(\d{1,3})(?:[vV](\d))?[-~&+](\d{1,3})(?:[vV](\d))?" + RegexMatchOnlyEnd;
       var match = Regex.Match(word, regexPattern);
-      if (match.Success)
-      {
-        var lowerBound = match.Groups[1].Value;
-        var upperBound = match.Groups[3].Value;
+      if (!match.Success) return false;
+      
+      var lowerBound = match.Groups[1].Value;
+      var upperBound = match.Groups[3].Value;
 
-        /** Avoid matching expressions such as "009-1" or "5-2" */
-        if (StringHelper.StringToInt(lowerBound) < StringHelper.StringToInt(upperBound))
+      /** Avoid matching expressions such as "009-1" or "5-2" */
+      if (StringHelper.StringToInt(lowerBound) < StringHelper.StringToInt(upperBound))
+      {
+        if (SetEpisodeNumber(lowerBound, token, true))
         {
-          if (SetEpisodeNumber(lowerBound, token, true))
+          SetEpisodeNumber(upperBound, token, true);
+          if (!string.IsNullOrEmpty(match.Groups[2].Value))
           {
-            SetEpisodeNumber(upperBound, token, true);
-            if (!string.IsNullOrEmpty(match.Groups[2].Value))
-            {
-              _parser.Elements.Add(new Element(Element.ElementCategory.ElementReleaseVersion, match.Groups[2].Value));
-            }
-            if (!string.IsNullOrEmpty(match.Groups[4].Value))
-            {
-              _parser.Elements.Add(new Element(Element.ElementCategory.ElementReleaseVersion, match.Groups[4].Value));
-            }
-            return true;
+            _parser.Elements.Add(new Element(Element.ElementCategory.ElementReleaseVersion, match.Groups[2].Value));
           }
+          if (!string.IsNullOrEmpty(match.Groups[4].Value))
+          {
+            _parser.Elements.Add(new Element(Element.ElementCategory.ElementReleaseVersion, match.Groups[4].Value));
+          }
+          return true;
         }
       }
 
@@ -343,25 +333,23 @@ namespace AnitomySharp
     /// <param name="word">the word</param>
     /// <param name="token">the token</param>
     /// <returns>true if the token matched</returns>
-    public bool MatchSeasonAndEpisodePattern(string word, Token token)
+    private bool MatchSeasonAndEpisodePattern(string word, Token token)
     {
-      var regexPattern = regexMatchOnlyStart + @"S?(\d{1,2})(?:-S?(\d{1,2}))?(?:x|[ ._-x]?E)(\d{1,3})(?:-E?(\d{1,3}))?" + regexMatchOnlyEnd;
+      const string regexPattern = RegexMatchOnlyStart + @"S?(\d{1,2})(?:-S?(\d{1,2}))?(?:x|[ ._-x]?E)(\d{1,3})(?:-E?(\d{1,3}))?" + RegexMatchOnlyEnd;
       var match = Regex.Match(word, regexPattern);
-      if (match.Success)
+      if (!match.Success) return false;
+      
+      _parser.Elements.Add(new Element(Element.ElementCategory.ElementAnimeSeason, match.Groups[1].Value));
+      if (!string.IsNullOrEmpty(match.Groups[2].Value))
       {
-        _parser.Elements.Add(new Element(Element.ElementCategory.ElementAnimeSeason, match.Groups[1].Value));
-        if (!string.IsNullOrEmpty(match.Groups[2].Value))
-        {
-          _parser.Elements.Add(new Element(Element.ElementCategory.ElementAnimeSeason, match.Groups[2].Value));
-        }
-        SetEpisodeNumber(match.Groups[3].Value, token, false);
-        if (!string.IsNullOrEmpty(match.Groups[4].Value))
-        {
-          SetEpisodeNumber(match.Groups[4].Value, token, false);
-        }
-        return true;
+        _parser.Elements.Add(new Element(Element.ElementCategory.ElementAnimeSeason, match.Groups[2].Value));
       }
-      return false;
+      SetEpisodeNumber(match.Groups[3].Value, token, false);
+      if (!string.IsNullOrEmpty(match.Groups[4].Value))
+      {
+        SetEpisodeNumber(match.Groups[4].Value, token, false);
+      }
+      return true;
     }
 
     /// <summary>
@@ -370,7 +358,7 @@ namespace AnitomySharp
     /// <param name="word">the word</param>
     /// <param name="token">the token</param>
     /// <returns>true if the token matched</returns>
-    public bool MatchTypeAndEpisodePattern(string word, Token token)
+    private bool MatchTypeAndEpisodePattern(string word, Token token)
     {
       var numberBegin = ParserHelper.IndexOfFirstDigit(word);
       var prefix = StringHelper.SubstringWithCheck(word, 0, numberBegin);
@@ -405,21 +393,16 @@ namespace AnitomySharp
     /// <param name="word">the word</param>
     /// <param name="token">the token</param>
     /// <returns>true if the token matched</returns>
-    public bool MatchFractionalEpisodePattern(string word, Token token)
+    private bool MatchFractionalEpisodePattern(string word, Token token)
     {
       if (string.IsNullOrEmpty(word))
       {
         word = "";
       }
 
-      var regexPattern = regexMatchOnlyStart + @"\d+\.5" + regexMatchOnlyEnd;
+      const string regexPattern = RegexMatchOnlyStart + @"\d+\.5" + RegexMatchOnlyEnd;
       var match = Regex.Match(word, regexPattern);
-      if (match.Success && SetEpisodeNumber(word, token, true))
-      {
-        return true;
-      }
-
-      return false;
+      return match.Success && SetEpisodeNumber(word, token, true);
     }
 
     /// <summary>
@@ -428,7 +411,7 @@ namespace AnitomySharp
     /// <param name="word">the word</param>
     /// <param name="token">the token</param>
     /// <returns>true if the token matched</returns>
-    public bool MatchPartialEpisodePattern(string word, Token token)
+    private bool MatchPartialEpisodePattern(string word, Token token)
     {
       if (string.IsNullOrEmpty(word)) return false;
       var foundIdx = Enumerable.Range(0, word.Length)
@@ -436,14 +419,9 @@ namespace AnitomySharp
         .FirstOrDefault(value => !char.IsDigit(word[value]));
       var suffixLength = word.Length - foundIdx;
 
-      Func<int, bool> isValidSuffix = c => (c >= 'A' && c <= 'C') || (c >= 'a' && c <= 'c');
+      bool IsValidSuffix(int c) => c >= 'A' && c <= 'C' || c >= 'a' && c <= 'c';
 
-      if (suffixLength == 1 && isValidSuffix(word[foundIdx]) && SetEpisodeNumber(word, token, true))
-      {
-        return true;
-      }
-
-      return false;
+      return suffixLength == 1 && IsValidSuffix(word[foundIdx]) && SetEpisodeNumber(word, token, true);
     }
 
     /// <summary>
@@ -452,26 +430,25 @@ namespace AnitomySharp
     /// <param name="word">the word</param>
     /// <param name="token">the token</param>
     /// <returns>true if the token matched</returns>
-    public bool MatchNumberSignPattern(string word, Token token)
+    private bool MatchNumberSignPattern(string word, Token token)
     {
       if (string.IsNullOrEmpty(word) || word[0] != '#') word = "";
-      var regexPattern = regexMatchOnlyStart + @"#(\d{1,3})(?:[-~&+](\d{1,3}))?(?:[vV](\d))?" + regexMatchOnlyEnd;
+      const string regexPattern = RegexMatchOnlyStart + @"#(\d{1,3})(?:[-~&+](\d{1,3}))?(?:[vV](\d))?" + RegexMatchOnlyEnd;
       var match = Regex.Match(word, regexPattern);
-      if (match.Success)
+      if (!match.Success) return false;
+      
+      if (SetEpisodeNumber(match.Groups[1].Value, token, true))
       {
-        if (SetEpisodeNumber(match.Groups[1].Value, token, true))
+        if (!string.IsNullOrEmpty(match.Groups[2].Value))
         {
-          if (!string.IsNullOrEmpty(match.Groups[2].Value))
-          {
-            SetEpisodeNumber(match.Groups[2].Value, token, false);
-          }
-          if (!string.IsNullOrEmpty(match.Groups[3].Value))
-          {
-            _parser.Elements.Add(new Element(Element.ElementCategory.ElementReleaseVersion, match.Groups[3].Value));
-          }
-
-          return true;
+          SetEpisodeNumber(match.Groups[2].Value, token, false);
         }
+        if (!string.IsNullOrEmpty(match.Groups[3].Value))
+        {
+          _parser.Elements.Add(new Element(Element.ElementCategory.ElementReleaseVersion, match.Groups[3].Value));
+        }
+
+        return true;
       }
 
       return false;
@@ -483,18 +460,15 @@ namespace AnitomySharp
     /// <param name="word">the word</param>
     /// <param name="token">the token</param>
     /// <returns>true if the token matched</returns>
-    public bool MatchJapaneseCounterPattern(string word, Token token)
+    private bool MatchJapaneseCounterPattern(string word, Token token)
     {
       if (string.IsNullOrEmpty(word) || word[word.Length - 1] != '\u8A71') return false;
-      var regexPattern = regexMatchOnlyStart + @"(\d{1,3})話" + regexMatchOnlyEnd;
+      const string regexPattern = RegexMatchOnlyStart + @"(\d{1,3})話" + RegexMatchOnlyEnd;
       var match = Regex.Match(word, regexPattern);
-      if (match.Success)
-      {
-        SetEpisodeNumber(match.Groups[1].Value, token, false);
-        return true;
-      }
+      if (!match.Success) return false;
+      SetEpisodeNumber(match.Groups[1].Value, token, false);
+      return true;
 
-      return false;
     }
 
     // VOLUME MATCHES
@@ -517,16 +491,8 @@ namespace AnitomySharp
 
       if (numericFront && numericBack)
       {
-        // e.g. "01v2"
-        if (MatchSingleVolumePattern(word, token))
-        {
-          return true;
-        }
-        // e.g. "01-02", "03-05v2"
-        if (MatchMultiVolumePattern(word, token))
-        {
-          return true;
-        }
+        // e.g. "01v2"                                    e.g. "01-02", "03-05v2"
+        return MatchSingleVolumePattern(word, token) || MatchMultiVolumePattern(word, token);
       }
 
       return false;
@@ -538,19 +504,16 @@ namespace AnitomySharp
     /// <param name="word">the word</param>
     /// <param name="token">the token</param>
     /// <returns>true if the token matched</returns>
-    public bool MatchSingleVolumePattern(string word, Token token)
+    private bool MatchSingleVolumePattern(string word, Token token)
     {
       if (string.IsNullOrEmpty(word)) word = "";
-      var regexPattern = regexMatchOnlyStart + @"(\d{1,2})[vV](\d)" + regexMatchOnlyEnd;
+      const string regexPattern = RegexMatchOnlyStart + @"(\d{1,2})[vV](\d)" + RegexMatchOnlyEnd;
       var match = Regex.Match(word, regexPattern);
-      if (match.Success)
-      {
-        SetVolumeNumber(match.Groups[1].Value, token, false);
-        _parser.Elements.Add(new Element(Element.ElementCategory.ElementReleaseVersion, match.Groups[2].Value));
-        return true;
-      }
-
-      return false;
+      if (!match.Success) return false;
+      
+      SetVolumeNumber(match.Groups[1].Value, token, false);
+      _parser.Elements.Add(new Element(Element.ElementCategory.ElementReleaseVersion, match.Groups[2].Value));
+      return true;
     }
 
     /// <summary>
@@ -559,26 +522,25 @@ namespace AnitomySharp
     /// <param name="word">the word</param>
     /// <param name="token">the token</param>
     /// <returns>true if the token matched</returns>
-    public bool MatchMultiVolumePattern(string word, Token token)
+    private bool MatchMultiVolumePattern(string word, Token token)
     {
       if (string.IsNullOrEmpty(word)) word = "";
-      var regexPattern = regexMatchOnlyStart + @"(\d{1,2})[-~&+](\d{1,2})(?:[vV](\d))?" + regexMatchOnlyEnd;
+      const string regexPattern = RegexMatchOnlyStart + @"(\d{1,2})[-~&+](\d{1,2})(?:[vV](\d))?" + RegexMatchOnlyEnd;
       var match = Regex.Match(word, regexPattern);
-      if (match.Success)
+      if (!match.Success) return false;
+      
+      var lowerBound = match.Groups[1].Value;
+      var upperBound = match.Groups[2].Value;
+      if (StringHelper.StringToInt(lowerBound) < StringHelper.StringToInt(upperBound))
       {
-        var lowerBound = match.Groups[1].Value;
-        var upperBound = match.Groups[2].Value;
-        if (StringHelper.StringToInt(lowerBound) < StringHelper.StringToInt(upperBound))
+        if (SetVolumeNumber(lowerBound, token, true))
         {
-          if (SetVolumeNumber(lowerBound, token, true))
+          SetVolumeNumber(upperBound, token, false);
+          if (string.IsNullOrEmpty(match.Groups[3].Value))
           {
-            SetVolumeNumber(upperBound, token, false);
-            if (string.IsNullOrEmpty(match.Groups[3].Value))
-            {
-              _parser.Elements.Add(new Element(Element.ElementCategory.ElementReleaseVersion, match.Groups[3].Value));
-            }
-            return true;
+            _parser.Elements.Add(new Element(Element.ElementCategory.ElementReleaseVersion, match.Groups[3].Value));
           }
+          return true;
         }
       }
 
@@ -592,7 +554,7 @@ namespace AnitomySharp
     /// </summary>
     /// <param name="tokens">the list of tokens</param>
     /// <returns>true if an isolated number was found</returns>
-    public bool SearchForIsolatedNumbers(List<int> tokens)
+    public bool SearchForIsolatedNumbers(IEnumerable<int> tokens)
     {
       foreach (var it in tokens)
       {
@@ -612,7 +574,7 @@ namespace AnitomySharp
     {
       foreach (var it in tokens)
       {
-        int previousToken = Token.FindPrevToken(_parser.Tokens, it, Token.TokenFlag.FlagNotDelimiter);
+        var previousToken = Token.FindPrevToken(_parser.Tokens, it, Token.TokenFlag.FlagNotDelimiter);
 
         // See if the number has a preceding "-" separator
         if (_parser.ParseHelper.IsTokenCategory(previousToken, Token.TokenCategory.Unknown) 
@@ -687,7 +649,7 @@ namespace AnitomySharp
         }
 
         // Find the first enclosed, non-delimiter token
-        int nextToken = Token.FindNextToken(_parser.Tokens, it, Token.TokenFlag.FlagNotDelimiter);
+        var nextToken = Token.FindNextToken(_parser.Tokens, it, Token.TokenFlag.FlagNotDelimiter);
         if (!_parser.ParseHelper.IsTokenCategory(nextToken, Token.TokenCategory.Bracket)) continue;
         nextToken = Token.FindNextToken(_parser.Tokens, nextToken, Token.TokenFlag.FlagEnclosed,
           Token.TokenFlag.FlagNotDelimiter);
@@ -706,8 +668,7 @@ namespace AnitomySharp
           _parser.Tokens[it], _parser.Tokens[nextToken]
         };
 
-        list.Sort((o1, o2) => 
-          StringHelper.StringToInt(o1.Content) - StringHelper.StringToInt(o2.Content));
+        list.Sort((o1, o2) => StringHelper.StringToInt(o1.Content) - StringHelper.StringToInt(o2.Content));
         SetEpisodeNumber(list[0].Content, list[0], false);
         SetAlternativeEpisodeNumber(list[1].Content, list[1]);
         return true;

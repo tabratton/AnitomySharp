@@ -53,7 +53,7 @@ namespace AnitomySharp
       elements.Add(new Element(Element.ElementCategory.ElementFileName, fname));
 
       /** tokenize */
-      bool isTokenized = new Tokenizer(fname, elements, options, tokens).Tokenize();
+      var isTokenized = new Tokenizer(fname, elements, options, tokens).Tokenize();
       if (!isTokenized)
       {
         return elements;
@@ -67,7 +67,7 @@ namespace AnitomySharp
     /// </summary>
     /// <param name="filename">the anime file name</param>
     /// <returns>the list of parsed elements</returns>
-    public static List<Element> Parse(string filename)
+    public static IEnumerable<Element> Parse(string filename)
     {
       return Parse(filename, new Options());
     }

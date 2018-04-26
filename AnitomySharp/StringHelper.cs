@@ -31,15 +31,15 @@ namespace AnitomySharp
     /// <summary>
     /// Returns whether or not the character is a hex character.
     /// </summary>
-    public static bool IsHexadecimalChar(char c)
+    private static bool IsHexadecimalChar(char c)
     {
-      return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
+      return c >= '0' && c <= '9' || c >= 'A' && c <= 'F' || c >= 'a' && c <= 'f';
     }
 
     /// <summary>
     /// Returns whether or not the character is a latin character
     /// </summary>
-    public static bool IsLatinChar(char c)
+    private static bool IsLatinChar(char c)
     {
       // We're just checking until the end of the Latin Extended-B block, 
       // rather than all the blocks that belong to the Latin script.

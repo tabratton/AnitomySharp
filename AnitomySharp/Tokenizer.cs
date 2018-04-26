@@ -238,35 +238,35 @@ namespace AnitomySharp
     /// </summary>
     private void ValidateDelimiterTokens()
     {
-      Func<int, bool> isDelimiterToken = it =>
+      bool IsDelimiterToken(int it)
       {
         return Token.InListRange(it, _tokens) && _tokens[it].Category == Token.TokenCategory.Delimiter;
-      };
+      }
 
-      Func<int, bool> isUnknownToken = it =>
+      bool IsUnknownToken(int it)
       {
         return Token.InListRange(it, _tokens) && _tokens[it].Category == Token.TokenCategory.Unknown;
-      };
+      }
 
-      Func<int, bool> isSingleCharacterToken = it =>
+      bool IsSingleCharacterToken(int it)
       {
-        return isUnknownToken(it) && _tokens[it].Content.Length == 1 && _tokens[it].Content[0] != '-';
-      };
+        return IsUnknownToken(it) && _tokens[it].Content.Length == 1 && _tokens[it].Content[0] != '-';
+      }
 
-      Action<Token, Token> appendTokenTo = (src, dest) =>
+      void AppendTokenTo(Token src, Token dest)
       {
-        dest.Content = dest.Content + src.Content;
+        dest.Content += src.Content;
         src.Category = Token.TokenCategory.Invalid;
-      };
+      }
 
       for (var i = 0; i < _tokens.Count; i++)
       {
-        Token token = _tokens[i];
+        var token = _tokens[i];
         if (token.Category != Token.TokenCategory.Delimiter) continue;
-        char delimiter = token.Content[0];
+        var delimiter = token.Content[0];
 
-        int prevToken = Token.FindPrevToken(_tokens, i, Token.TokenFlag.FlagValid);
-        int nextToken = Token.FindNextToken(_tokens, i, Token.TokenFlag.FlagValid);
+        var prevToken = Token.FindPrevToken(_tokens, i, Token.TokenFlag.FlagValid);
+        var nextToken = Token.FindNextToken(_tokens, i, Token.TokenFlag.FlagValid);
 
         // Check for single-character tokens to prevent splitting group names,
         // keywords, episode numbers, etc.
@@ -274,18 +274,18 @@ namespace AnitomySharp
         {
 
           // Single character token
-          if (isSingleCharacterToken(prevToken))
+          if (IsSingleCharacterToken(prevToken))
           {
-            appendTokenTo(token, _tokens[prevToken]);
+            AppendTokenTo(token, _tokens[prevToken]);
 
-            while (isUnknownToken(nextToken))
+            while (IsUnknownToken(nextToken))
             {
-              appendTokenTo(_tokens[nextToken], _tokens[prevToken]);
+              AppendTokenTo(_tokens[nextToken], _tokens[prevToken]);
 
               nextToken = Token.FindNextToken(_tokens, i, Token.TokenFlag.FlagValid);
-              if (isDelimiterToken(nextToken) && _tokens[nextToken].Content[0] == delimiter)
+              if (IsDelimiterToken(nextToken) && _tokens[nextToken].Content[0] == delimiter)
               {
-                appendTokenTo(_tokens[nextToken], _tokens[prevToken]);
+                AppendTokenTo(_tokens[nextToken], _tokens[prevToken]);
                 nextToken = Token.FindNextToken(_tokens, nextToken, Token.TokenFlag.FlagValid);
               }
             }
@@ -293,27 +293,27 @@ namespace AnitomySharp
             continue;
           }
 
-          if (isSingleCharacterToken(nextToken))
+          if (IsSingleCharacterToken(nextToken))
           {
-            appendTokenTo(token, _tokens[prevToken]);
-            appendTokenTo(_tokens[nextToken], _tokens[prevToken]);
+            AppendTokenTo(token, _tokens[prevToken]);
+            AppendTokenTo(_tokens[nextToken], _tokens[prevToken]);
             continue;
           }
         }
 
         // Check for adjacent delimiters
-        if (isUnknownToken(prevToken) && isDelimiterToken(nextToken))
+        if (IsUnknownToken(prevToken) && IsDelimiterToken(nextToken))
         {
           var nextDelimiter = _tokens[nextToken].Content[0];
           if (delimiter != nextDelimiter && delimiter != ',')
           {
             if (nextDelimiter == ' ' || nextDelimiter == '_')
             {
-              appendTokenTo(token, _tokens[prevToken]);
+              AppendTokenTo(token, _tokens[prevToken]);
             }
           }
         }
-        else if (isDelimiterToken(prevToken) && isDelimiterToken(nextToken))
+        else if (IsDelimiterToken(prevToken) && IsDelimiterToken(nextToken))
         {
           var prevDelimiter = _tokens[prevToken].Content[0];
           var nextDelimiter = _tokens[nextToken].Content[0];
@@ -326,13 +326,13 @@ namespace AnitomySharp
         // Check for other special cases
         if (delimiter == '&' || delimiter == '+')
         {
-          if (isUnknownToken(prevToken) && isUnknownToken(nextToken))
+          if (IsUnknownToken(prevToken) && IsUnknownToken(nextToken))
           {
             if (StringHelper.IsNumericString(_tokens[prevToken].Content) &&
                 StringHelper.IsNumericString(_tokens[nextToken].Content))
             {
-              appendTokenTo(token, _tokens[prevToken]);
-              appendTokenTo(_tokens[nextToken], _tokens[prevToken]); // e.g. 01+02
+              AppendTokenTo(token, _tokens[prevToken]);
+              AppendTokenTo(_tokens[nextToken], _tokens[prevToken]); // e.g. 01+02
             }
           }
         }

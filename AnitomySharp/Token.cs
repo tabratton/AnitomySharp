@@ -48,7 +48,7 @@ namespace AnitomySharp
       FlagValid, FlagNotValid,
 
       // Enclosed (Meaning that it is enclosed in some bracket (e.g. [ ] ))
-      FlagEnclosed, FlagNotEnclosed,
+      FlagEnclosed, FlagNotEnclosed
     }
 
     /// <summary>
@@ -94,15 +94,18 @@ namespace AnitomySharp
     /// <param name="token">the token</param>
     /// <param name="flags">the flags the token must conform against</param>
     /// <returns>true if the token conforms to the set of <code>flags</code>; false otherwise</returns>
-    public static bool CheckTokenFlags(Token token, List<TokenFlag> flags)
+    private static bool CheckTokenFlags(Token token, ICollection<TokenFlag> flags)
     {
       // Simple alias to check if flag is a part of the set
-      Func<TokenFlag, bool> checkFlag = flags.Contains;
+      bool CheckFlag(TokenFlag flag)
+      {
+        return flags.Contains(flag);
+      }
 
       // Make sure token is the correct closure
       if (flags.Any(f => FlagMaskEnclosed.Contains(f)))
       {
-        var success = checkFlag(TokenFlag.FlagEnclosed) == token.Enclosed;
+        var success = CheckFlag(TokenFlag.FlagEnclosed) == token.Enclosed;
         if (!success) return false; // Not enclosed correctly (e.g. enclosed when we're looking for non-enclosed).
       }
 
@@ -113,7 +116,7 @@ namespace AnitomySharp
       void CheckCategory(TokenFlag fe, TokenFlag fn, TokenCategory c)
       {
         if (secondarySuccess) return;
-        var result = checkFlag(fe) ? token.Category == c : checkFlag(fn) && token.Category != c;
+        var result = CheckFlag(fe) ? token.Category == c : CheckFlag(fn) && token.Category != c;
         secondarySuccess = result;
       }
 
@@ -172,7 +175,7 @@ namespace AnitomySharp
     /// <param name="next">a function that returns the next search index</param>
     /// <param name="flags">the flags that each token should be validated against</param>
     /// <returns>the found token</returns>
-    public static int FindTokenBase(
+    private static int FindTokenBase(
       List<Token> tokens,
       int begin,
       int end,

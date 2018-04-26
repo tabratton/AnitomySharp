@@ -8,7 +8,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
 */
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -19,7 +18,7 @@ namespace AnitomySharp
   /// </summary>
   public class Parser
   {
-    public bool IsEpisodeKeywordsFound { get; set; } = false;
+    public bool IsEpisodeKeywordsFound { get; set; }
     public ParserHelper ParseHelper { get; }
     public ParserNumber ParseNumber { get; }
     public List<Element> Elements { get; }
@@ -34,11 +33,11 @@ namespace AnitomySharp
     /// <param name="tokens">the list of tokens</param>
     public Parser(List<Element> elements, Options options, List<Token> tokens)
     {
-      this.Elements = elements;
-      this.Options = options;
-      this.Tokens = tokens;
-      this.ParseHelper = new ParserHelper(this);
-      this.ParseNumber = new ParserNumber(this);
+      Elements = elements;
+      Options = options;
+      Tokens = tokens;
+      ParseHelper = new ParserHelper(this);
+      ParseNumber = new ParserNumber(this);
     }
 
     /** Begins the parsing process */
@@ -97,7 +96,8 @@ namespace AnitomySharp
             ParseHelper.CheckAndSetAnimeSeasonKeyword(token, i);
             continue;
           }
-          else if (category == Element.ElementCategory.ElementEpisodePrefix)
+
+          if (category == Element.ElementCategory.ElementEpisodePrefix)
           {
             if (options.Valid)
             {
@@ -141,7 +141,7 @@ namespace AnitomySharp
     private void SearchForEpisodeNumber()
     {
       // List all unknown tokens that contain a number
-      List<int> tokens = new List<int>();
+      var tokens = new List<int>();
       for (var i = 0; i < Tokens.Count; i++)
       {
         var token = Tokens[i];
