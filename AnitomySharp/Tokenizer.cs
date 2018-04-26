@@ -322,6 +322,20 @@ namespace AnitomySharp
             token.Category = Token.TokenCategory.Unknown; // e.g. "& in "_&_"
           }
         }
+        
+        // Check for other special cases
+        if (delimiter == '&' || delimiter == '+')
+        {
+          if (isUnknownToken(prevToken) && isUnknownToken(nextToken))
+          {
+            if (StringHelper.IsNumericString(_tokens[prevToken].Content) &&
+                StringHelper.IsNumericString(_tokens[nextToken].Content))
+            {
+              appendTokenTo(token, _tokens[prevToken]);
+              appendTokenTo(_tokens[nextToken], _tokens[prevToken]); // e.g. 01+02
+            }
+          }
+        }
       }
 
       // Remove invalid tokens

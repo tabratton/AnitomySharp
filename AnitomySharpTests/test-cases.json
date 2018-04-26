@@ -2340,7 +2340,6 @@
     "ElementVolumeNumber" : [ "1", "2"]
   }
 }, {
-
   "file_name": "[Infantjedi] Norn9 - Norn + Nonetto - 12",
   "id": 31452,
   "ignore": false,
@@ -2349,8 +2348,7 @@
     "ElementEpisodeNumber": "12",
     "ElementReleaseGroup": "Infantjedi"
   }
-},
-  {
+}, {
 	"file_name": "Dragon_Ball_Z_Movies_8_&_10_[720p,BluRay,DTS,x264]_-_THORA",
 	"id": [
 		901,
@@ -2368,4 +2366,15 @@
         "10"
       ]
     }
+}, {
+  "file_name": "[HorribleSubs] Momokuri - 01+02 [720p]",
+  "results": {
+    "ElementReleaseGroup": "HorribleSubs",
+    "ElementAnimeTitle": "Momokuri",
+    "ElementEpisodeNumber": [
+      "01",
+      "02"
+    ],
+    "ElementVideoResolution": "720p"
+  }
 } ]
