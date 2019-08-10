@@ -24,12 +24,12 @@ namespace AnitomySharp
     private AnitomySharp() {}
 
     /// <summary>
-    /// Parses an anime <see cref="filename"/> into its consituent elements.
+    /// Parses an anime <see cref="filename"/> into its constituent elements.
     /// </summary>
     /// <param name="filename">the anime file name</param>
     /// <param name="options">the options to parse with, use Parse(filename) to use default options</param>
     /// <returns>the list of parsed elements</returns>
-    public static List<Element> Parse(string filename, Options options)
+    public static IEnumerable<Element> Parse(string filename, Options options)
     {
       var elements = new List<Element>(32);
       var tokens = new List<Token>();
@@ -95,7 +95,7 @@ namespace AnitomySharp
 
       /** check if valid anime extension */
       var keyword = KeywordManager.Normalize(extension);
-      if (!KeywordManager.Instance.Contains(Element.ElementCategory.ElementFileExtension, keyword))
+      if (!KeywordManager.Contains(Element.ElementCategory.ElementFileExtension, keyword))
       {
         return false;
       }

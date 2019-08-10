@@ -137,28 +137,26 @@ namespace AnitomySharp
     {
       var numberBegin = ParserHelper.IndexOfFirstDigit(token.Content);
       var prefix = StringHelper.SubstringWithCheck(token.Content, 0, numberBegin).ToUpperInvariant();
-      if (KeywordManager.Instance.Contains(category, prefix))
+      if (!KeywordManager.Contains(category, prefix)) return false;
+      var number = StringHelper.SubstringWithCheck(token.Content, numberBegin, token.Content.Length - numberBegin);
+
+      switch (category)
       {
-        var number = StringHelper.SubstringWithCheck(token.Content, numberBegin, token.Content.Length - numberBegin);
-
-        switch (category)
-        {
-            case Element.ElementCategory.ElementEpisodePrefix:
-              if (!MatchEpisodePatterns(number, token))
-              {
-                SetEpisodeNumber(number, token, false);
-              }
-              return true;
-            case Element.ElementCategory.ElementVolumePrefix:
-              if (!MatchVolumePatterns(number, token))
-              {
-                SetVolumeNumber(number, token, false);
-              }
-              return true;
-        }
+        case Element.ElementCategory.ElementEpisodePrefix:
+          if (!MatchEpisodePatterns(number, token))
+          {
+            SetEpisodeNumber(number, token, false);
+          }
+          return true;
+        case Element.ElementCategory.ElementVolumePrefix:
+          if (!MatchVolumePatterns(number, token))
+          {
+            SetVolumeNumber(number, token, false);
+          }
+          return true;
+        default:
+          return false;
       }
-
-      return false;
     }
 
     /// <summary>
@@ -170,35 +168,29 @@ namespace AnitomySharp
     private bool NumberComesBeforeAnotherNumber(Token token, int currentTokenIdx)
     {
       var separatorToken = Token.FindNextToken(_parser.Tokens, currentTokenIdx, Token.TokenFlag.FlagNotDelimiter);
-      
-      if (Token.InListRange(separatorToken, _parser.Tokens))
-      {
-        List<Tuple<string, bool>> separators = new List<Tuple<string, bool>>
-        {
-          Tuple.Create("&", true),
-          Tuple.Create("of", false)
-        };
-        
-        foreach (var separator in separators)
-        {
-          if (_parser.Tokens[separatorToken].Content == separator.Item1)
-          {
-            var otherToken = Token.FindNextToken(_parser.Tokens, separatorToken, Token.TokenFlag.FlagNotDelimiter);
-            if (Token.InListRange(otherToken, _parser.Tokens) &&
-                StringHelper.IsNumericString(_parser.Tokens[otherToken].Content))
-            {
-              SetEpisodeNumber(token.Content, token, false);
-              if (separator.Item2)
-              {
-                SetEpisodeNumber(_parser.Tokens[otherToken].Content, _parser.Tokens[otherToken], false);
-              }
 
-              _parser.Tokens[separatorToken].Category = Token.TokenCategory.Identifier;
-              _parser.Tokens[otherToken].Category = Token.TokenCategory.Identifier;
-              return true;
-            }
-          }
+      if (!Token.InListRange(separatorToken, _parser.Tokens)) return false;
+      var separators = new List<Tuple<string, bool>>
+      {
+        Tuple.Create("&", true),
+        Tuple.Create("of", false)
+      };
+        
+      foreach (var separator in separators)
+      {
+        if (_parser.Tokens[separatorToken].Content != separator.Item1) continue;
+        var otherToken = Token.FindNextToken(_parser.Tokens, separatorToken, Token.TokenFlag.FlagNotDelimiter);
+        if (!Token.InListRange(otherToken, _parser.Tokens)
+            || !StringHelper.IsNumericString(_parser.Tokens[otherToken].Content)) continue;
+        SetEpisodeNumber(token.Content, token, false);
+        if (separator.Item2)
+        {
+          SetEpisodeNumber(_parser.Tokens[otherToken].Content, _parser.Tokens[otherToken], false);
         }
+
+        _parser.Tokens[separatorToken].Category = Token.TokenCategory.Identifier;
+        _parser.Tokens[otherToken].Category = Token.TokenCategory.Identifier;
+        return true;
       }
 
       return false;
@@ -307,24 +299,19 @@ namespace AnitomySharp
       var upperBound = match.Groups[3].Value;
 
       /** Avoid matching expressions such as "009-1" or "5-2" */
-      if (StringHelper.StringToInt(lowerBound) < StringHelper.StringToInt(upperBound))
+      if (StringHelper.StringToInt(lowerBound) >= StringHelper.StringToInt(upperBound)) return false;
+      if (!SetEpisodeNumber(lowerBound, token, true)) return false;
+      SetEpisodeNumber(upperBound, token, true);
+      if (!string.IsNullOrEmpty(match.Groups[2].Value))
       {
-        if (SetEpisodeNumber(lowerBound, token, true))
-        {
-          SetEpisodeNumber(upperBound, token, true);
-          if (!string.IsNullOrEmpty(match.Groups[2].Value))
-          {
-            _parser.Elements.Add(new Element(Element.ElementCategory.ElementReleaseVersion, match.Groups[2].Value));
-          }
-          if (!string.IsNullOrEmpty(match.Groups[4].Value))
-          {
-            _parser.Elements.Add(new Element(Element.ElementCategory.ElementReleaseVersion, match.Groups[4].Value));
-          }
-          return true;
-        }
+        _parser.Elements.Add(new Element(Element.ElementCategory.ElementReleaseVersion, match.Groups[2].Value));
       }
+      if (!string.IsNullOrEmpty(match.Groups[4].Value))
+      {
+        _parser.Elements.Add(new Element(Element.ElementCategory.ElementReleaseVersion, match.Groups[4].Value));
+      }
+      return true;
 
-      return false;
     }
 
     /// <summary>
@@ -366,25 +353,18 @@ namespace AnitomySharp
       var category = Element.ElementCategory.ElementAnimeType;
       var options = new KeywordOptions();
 
-      if (KeywordManager.Instance.FindAndSet(KeywordManager.Normalize(prefix), ref category, ref options))
-      {
-        _parser.Elements.Add(new Element(Element.ElementCategory.ElementAnimeType, prefix));
-        var number = word.Substring(numberBegin);
-        if (MatchEpisodePatterns(number, token) || SetEpisodeNumber(number, token, true))
-        {
-          var foundIdx = _parser.Tokens.IndexOf(token);
-          if (foundIdx != -1)
-          {
-            token.Content = number;
-            _parser.Tokens.Insert(foundIdx, 
-              new Token(options.Identifiable ? Token.TokenCategory.Identifier : Token.TokenCategory.Unknown, prefix, token.Enclosed));
-          }
+      if (!KeywordManager.FindAndSet(KeywordManager.Normalize(prefix), ref category, ref options)) return false;
+      _parser.Elements.Add(new Element(Element.ElementCategory.ElementAnimeType, prefix));
+      var number = word.Substring(numberBegin);
+      if (!MatchEpisodePatterns(number, token) && !SetEpisodeNumber(number, token, true)) return false;
+      var foundIdx = _parser.Tokens.IndexOf(token);
+      if (foundIdx == -1) return true;
+      token.Content = number;
+      _parser.Tokens.Insert(foundIdx, 
+        new Token(options.Identifiable ? Token.TokenCategory.Identifier : Token.TokenCategory.Unknown, prefix, token.Enclosed));
 
-          return true;
-        }
-      }
+      return true;
 
-      return false;
     }
 
     /// <summary>
@@ -436,22 +416,19 @@ namespace AnitomySharp
       const string regexPattern = RegexMatchOnlyStart + @"#(\d{1,3})(?:[-~&+](\d{1,3}))?(?:[vV](\d))?" + RegexMatchOnlyEnd;
       var match = Regex.Match(word, regexPattern);
       if (!match.Success) return false;
-      
-      if (SetEpisodeNumber(match.Groups[1].Value, token, true))
-      {
-        if (!string.IsNullOrEmpty(match.Groups[2].Value))
-        {
-          SetEpisodeNumber(match.Groups[2].Value, token, false);
-        }
-        if (!string.IsNullOrEmpty(match.Groups[3].Value))
-        {
-          _parser.Elements.Add(new Element(Element.ElementCategory.ElementReleaseVersion, match.Groups[3].Value));
-        }
 
-        return true;
+      if (!SetEpisodeNumber(match.Groups[1].Value, token, true)) return false;
+      if (!string.IsNullOrEmpty(match.Groups[2].Value))
+      {
+        SetEpisodeNumber(match.Groups[2].Value, token, false);
+      }
+      if (!string.IsNullOrEmpty(match.Groups[3].Value))
+      {
+        _parser.Elements.Add(new Element(Element.ElementCategory.ElementReleaseVersion, match.Groups[3].Value));
       }
 
-      return false;
+      return true;
+
     }
 
     /// <summary>
@@ -531,38 +508,29 @@ namespace AnitomySharp
       
       var lowerBound = match.Groups[1].Value;
       var upperBound = match.Groups[2].Value;
-      if (StringHelper.StringToInt(lowerBound) < StringHelper.StringToInt(upperBound))
+      if (StringHelper.StringToInt(lowerBound) >= StringHelper.StringToInt(upperBound)) return false;
+      if (!SetVolumeNumber(lowerBound, token, true)) return false;
+      SetVolumeNumber(upperBound, token, false);
+      if (string.IsNullOrEmpty(match.Groups[3].Value))
       {
-        if (SetVolumeNumber(lowerBound, token, true))
-        {
-          SetVolumeNumber(upperBound, token, false);
-          if (string.IsNullOrEmpty(match.Groups[3].Value))
-          {
-            _parser.Elements.Add(new Element(Element.ElementCategory.ElementReleaseVersion, match.Groups[3].Value));
-          }
-          return true;
-        }
+        _parser.Elements.Add(new Element(Element.ElementCategory.ElementReleaseVersion, match.Groups[3].Value));
       }
+      return true;
 
-      return false;
     }
 
     // SEARCH
 
     /// <summary>
-    /// Searchs for isolated numbers in a list of <code>tokens</code>.
+    /// Searches for isolated numbers in a list of <code>tokens</code>.
     /// </summary>
     /// <param name="tokens">the list of tokens</param>
     /// <returns>true if an isolated number was found</returns>
     public bool SearchForIsolatedNumbers(IEnumerable<int> tokens)
     {
-      foreach (var it in tokens)
-      {
-        if (!_parser.Tokens[it].Enclosed || !_parser.ParseHelper.IsTokenIsolated(it)) continue;
-        if (SetEpisodeNumber(_parser.Tokens[it].Content, _parser.Tokens[it], true)) return true;
-      }
-
-      return false;
+      return tokens
+        .Where(it => _parser.Tokens[it].Enclosed && _parser.ParseHelper.IsTokenIsolated(it))
+        .Any(it => SetEpisodeNumber(_parser.Tokens[it].Content, _parser.Tokens[it], true));
     }
 
     /// <summary>
@@ -577,15 +545,11 @@ namespace AnitomySharp
         var previousToken = Token.FindPrevToken(_parser.Tokens, it, Token.TokenFlag.FlagNotDelimiter);
 
         // See if the number has a preceding "-" separator
-        if (_parser.ParseHelper.IsTokenCategory(previousToken, Token.TokenCategory.Unknown) 
-            && ParserHelper.IsDashCharacter(_parser.Tokens[previousToken].Content[0]))
-        {
-          if (SetEpisodeNumber(_parser.Tokens[it].Content, _parser.Tokens[it], true))
-          {
-            _parser.Tokens[previousToken].Category = Token.TokenCategory.Identifier;
-            return true;
-          }
-        }
+        if (!_parser.ParseHelper.IsTokenCategory(previousToken, Token.TokenCategory.Unknown)
+            || !ParserHelper.IsDashCharacter(_parser.Tokens[previousToken].Content[0])) continue;
+        if (!SetEpisodeNumber(_parser.Tokens[it].Content, _parser.Tokens[it], true)) continue;
+        _parser.Tokens[previousToken].Category = Token.TokenCategory.Identifier;
+        return true;
       }
 
       return false;

@@ -17,7 +17,7 @@ namespace AnitomySharp
   /// <summary>
   /// A string helper class that is analogous to <code>string.cpp</code> of the original Anitomy, and <code>StringHelper.java</code> of AnitomyJ.
   /// </summary>
-  public class StringHelper
+  public static class StringHelper
   {
 
     /// <summary>

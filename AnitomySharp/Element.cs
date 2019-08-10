@@ -64,7 +64,7 @@ namespace AnitomySharp
 
     public override int GetHashCode()
     {
-      return -1926371015 + Category.GetHashCode();
+      return -1926371015 + Value.GetHashCode();
     }
 
     public override bool Equals(object obj)

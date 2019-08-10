@@ -18,12 +18,12 @@ namespace AnitomySharp
   /// </summary>
   public class Parser
   {
-    public bool IsEpisodeKeywordsFound { get; set; }
+    public bool IsEpisodeKeywordsFound { get; private set; }
     public ParserHelper ParseHelper { get; }
     public ParserNumber ParseNumber { get; }
     public List<Element> Elements { get; }
     public List<Token> Tokens { get; }
-    public Options Options { get; }
+    private Options Options { get; }
 
     /// <summary>
     /// Constructs a new token parser
@@ -86,33 +86,25 @@ namespace AnitomySharp
         var category = Element.ElementCategory.ElementUnknown;
         var options = new KeywordOptions();
 
-        if (KeywordManager.Instance.FindAndSet(keyword, ref category, ref options))
+        if (KeywordManager.FindAndSet(keyword, ref category, ref options))
         {
           if (!Options.ParseReleaseGroup && category == Element.ElementCategory.ElementReleaseGroup) continue;
           if (!ParseHelper.IsElementCategorySearchable(category) || !options.Searchable) continue;
           if (ParseHelper.IsElementCategorySingular(category) && !Empty(category)) continue;
-          if (category == Element.ElementCategory.ElementAnimeSeasonPrefix)
+          switch (category)
           {
-            ParseHelper.CheckAndSetAnimeSeasonKeyword(token, i);
-            continue;
-          }
-
-          if (category == Element.ElementCategory.ElementEpisodePrefix)
-          {
-            if (options.Valid)
-            {
+            case Element.ElementCategory.ElementAnimeSeasonPrefix:
+              ParseHelper.CheckAndSetAnimeSeasonKeyword(token, i);
+              continue;
+            case Element.ElementCategory.ElementEpisodePrefix when options.Valid:
               ParseHelper.CheckExtentKeyword(Element.ElementCategory.ElementEpisodeNumber, i, token);
               continue;
-            }
-          }
-          else if (category == Element.ElementCategory.ElementReleaseVersion)
-          {
-            word = word.Substring(1);
-          }
-          else if (category == Element.ElementCategory.ElementVolumePrefix)
-          {
-            ParseHelper.CheckExtentKeyword(Element.ElementCategory.ElementVolumeNumber, i, token);
-            continue;
+            case Element.ElementCategory.ElementReleaseVersion:
+              word = word.Substring(1);
+              break;
+            case Element.ElementCategory.ElementVolumePrefix:
+              ParseHelper.CheckExtentKeyword(Element.ElementCategory.ElementVolumeNumber, i, token);
+              continue;
           }
         }
         else
@@ -126,13 +118,11 @@ namespace AnitomySharp
           }
         }
 
-        if (category != Element.ElementCategory.ElementUnknown)
+        if (category == Element.ElementCategory.ElementUnknown) continue;
+        Elements.Add(new Element(category, word));
+        if (options.Identifiable)
         {
-          Elements.Add(new Element(category, word));
-          if (options.Identifiable)
-          {
-            token.Category = Token.TokenCategory.Identifier;
-          }
+          token.Category = Token.TokenCategory.Identifier;
         }
       }
     }
@@ -231,11 +221,9 @@ namespace AnitomySharp
         var bracketOpen = false;
         for (var i = tokenBegin; i < tokenEnd; i++)
         {
-          if (Tokens[i].Category == Token.TokenCategory.Bracket)
-          {
-            lastBracket = i;
-            bracketOpen = !bracketOpen;
-          }
+          if (Tokens[i].Category != Token.TokenCategory.Bracket) continue;
+          lastBracket = i;
+          bracketOpen = !bracketOpen;
         }
 
         if (bracketOpen) tokenEnd = lastBracket;
@@ -243,7 +231,7 @@ namespace AnitomySharp
 
       // If the interval ends with an enclosed group (e.g. "Anime Title [Fansub]"),
       // move the upper endpoint back to the beginning of the group. We ignore
-      // parenthese in order to keep certain groups (e.g. "(TV)") intact.
+      // parentheses in order to keep certain groups (e.g. "(TV)") intact.
       if (!enclosedTitle)
       {
         var token = Token.FindPrevToken(Tokens, tokenEnd, Token.TokenFlag.FlagNotDelimiter);
@@ -251,11 +239,9 @@ namespace AnitomySharp
         while (ParseHelper.IsTokenCategory(token, Token.TokenCategory.Bracket) && Tokens[token].Content[0] != ')')
         {
           token = Token.FindPrevToken(Tokens, token, Token.TokenFlag.FlagBracket);
-          if (Token.InListRange(token, Tokens))
-          {
-            tokenEnd = token;
-            token = Token.FindPrevToken(Tokens, tokenEnd, Token.TokenFlag.FlagNotDelimiter);
-          }
+          if (!Token.InListRange(token, Tokens)) continue;
+          tokenEnd = token;
+          token = Token.FindPrevToken(Tokens, tokenEnd, Token.TokenFlag.FlagNotDelimiter);
         }
       }
 
@@ -339,16 +325,12 @@ namespace AnitomySharp
         }
 
         // Video resolution
-        if (number == 480 || number == 720 || number == 1080)
-        {
-          // If these numbers are isolated, it's more likely for them to be the
-          // video resolution rather than the episode number. Some fansub groups use these without the "p" suffix.
-          if (Empty(Element.ElementCategory.ElementVideoResolution))
-          {
-            Elements.Add(new Element(Element.ElementCategory.ElementVideoResolution, token.Content));
-            token.Category = Token.TokenCategory.Identifier;
-          }
-        }
+        if (number != 480 && number != 720 && number != 1080) continue;
+        // If these numbers are isolated, it's more likely for them to be the
+        // video resolution rather than the episode number. Some fansub groups use these without the "p" suffix.
+        if (!Empty(Element.ElementCategory.ElementVideoResolution)) continue;
+        Elements.Add(new Element(Element.ElementCategory.ElementVideoResolution, token.Content));
+        token.Category = Token.TokenCategory.Identifier;
       }
     }
 
@@ -377,7 +359,7 @@ namespace AnitomySharp
               else
               {
                 var keyword = KeywordManager.Normalize(el.Value);
-                if (KeywordManager.Instance.Contains(Element.ElementCategory.ElementAnimeType, keyword))
+                if (KeywordManager.Contains(Element.ElementCategory.ElementAnimeType, keyword))
                 {
                   i = Erase(el); // invalid anime type
                   continue;
@@ -410,12 +392,10 @@ namespace AnitomySharp
     {
       var foundElement = Elements.Find(element => element.Category == category);
 
-      if (foundElement == null)
-      {
-        Element e = new Element(category, "");
-        Elements.Add(e);
-        foundElement = e;
-      }
+      if (foundElement != null) return foundElement.Value;
+      Element e = new Element(category, "");
+      Elements.Add(e);
+      foundElement = e;
 
       return foundElement.Value;
     }
@@ -429,12 +409,10 @@ namespace AnitomySharp
       for (var i = 0; i < Elements.Count; i++)
       {
         var currentElement = Elements[i];
-        if (element.Category == currentElement.Category)
-        {
-          removedIdx = i;
-          Elements.RemoveAt(i);
-          break;
-        }
+        if (element.Category != currentElement.Category) continue;
+        removedIdx = i;
+        Elements.RemoveAt(i);
+        break;
       }
 
       return removedIdx;

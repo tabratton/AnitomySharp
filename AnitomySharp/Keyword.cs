@@ -18,12 +18,11 @@ namespace AnitomySharp
   /// <summary>
   /// A class to manager the list of known anime keywords. This class is analogous to <code>keyword.cpp</code> of Anitomy, and <code>KeywordManager.java</code> of AnitomyJ
   /// </summary>
-  public class KeywordManager
+  public static class KeywordManager
   {
     private static readonly Dictionary<string, Keyword> Keys = new Dictionary<string, Keyword>();
     private static readonly Dictionary<string, Keyword> Extensions = new Dictionary<string, Keyword>();
     private static readonly List<Tuple<Element.ElementCategory, List<string>>> PeekEntries;
-    public static KeywordManager Instance { get; } = new KeywordManager();
 
     static KeywordManager()
     {
@@ -80,7 +79,7 @@ namespace AnitomySharp
 
       Add(Element.ElementCategory.ElementFileExtension,
         optionsDefault,
-        new List<string> {"3GP", "AVI", "DIVX", "FLV", "M2TS", "MKV", "MOV", "MP4", "MPG", "OGM", "RM", "RMVB", "WEBM", "WMV"});
+        new List<string> {"3GP", "AVI", "DIVX", "FLV", "M2TS", "MKV", "MOV", "MP4", "MPG", "OGM", "RM", "RMVB", "TS", "WEBM", "WMV"});
 
       Add(Element.ElementCategory.ElementFileExtension,
         optionsInvalid,
@@ -157,7 +156,7 @@ namespace AnitomySharp
       return string.IsNullOrEmpty(word) ? word : word.ToUpperInvariant();
     }
 
-    public bool Contains(Element.ElementCategory category, string keyword)
+    public static bool Contains(Element.ElementCategory category, string keyword)
     {
       var keys = GetKeywordContainer(category);
       if (keys.TryGetValue(keyword, out var foundEntry))
@@ -175,7 +174,7 @@ namespace AnitomySharp
     /// <param name="category">the reference that will be set/changed to the found keyword category</param>
     /// <param name="options">the reference that will be set/changed to the found keyword options</param>
     /// <returns>if the keyword was found</returns>
-    public bool FindAndSet(string keyword, ref Element.ElementCategory category, ref KeywordOptions options)
+    public static bool FindAndSet(string keyword, ref Element.ElementCategory category, ref KeywordOptions options)
     {
       var keys = GetKeywordContainer(category);
       if (!keys.TryGetValue(keyword, out var foundEntry))
@@ -202,8 +201,7 @@ namespace AnitomySharp
     /// <param name="range">the search range</param>
     /// <param name="elements">elements array that any pre-identified elements will be added to</param>
     /// <param name="preidentifiedTokens">elements array that any pre-identified token ranges will be added to</param>
-    public void PeekAndAdd(string filename, TokenRange range, List<Element> elements,
-      List<TokenRange> preidentifiedTokens)
+    public static void PeekAndAdd(string filename, TokenRange range, List<Element> elements, List<TokenRange> preidentifiedTokens)
     {
       var endR = range.Offset + range.Size;
       var search = filename.Substring(range.Offset, endR > filename.Length ? filename.Length - range.Offset : endR - range.Offset);
@@ -212,12 +210,10 @@ namespace AnitomySharp
         foreach (var keyword in entry.Item2)
         {
           var foundIdx = search.IndexOf(keyword, StringComparison.CurrentCulture);
-          if (foundIdx != -1)
-          {
-            foundIdx += range.Offset;
-            elements.Add(new Element(entry.Item1, keyword));
-            preidentifiedTokens.Add(new TokenRange(foundIdx, keyword.Length));
-          }
+          if (foundIdx == -1) continue;
+          foundIdx += range.Offset;
+          elements.Add(new Element(entry.Item1, keyword));
+          preidentifiedTokens.Add(new TokenRange(foundIdx, keyword.Length));
         }
       }
     }
@@ -234,8 +230,7 @@ namespace AnitomySharp
     private static void Add(Element.ElementCategory category, KeywordOptions options, IEnumerable<string> keywords)
     {
       var keys = GetKeywordContainer(category);
-      foreach (var key in keywords.Where(k => !string.IsNullOrEmpty(k))
-        .Where(k => !keys.ContainsKey(k)))
+      foreach (var key in keywords.Where(k => !string.IsNullOrEmpty(k) && !keys.ContainsKey(k)))
       {
         keys[key] = new Keyword(category, options);
       }
@@ -243,7 +238,7 @@ namespace AnitomySharp
   }
 
   /// <summary>
-  /// Keyword options for a partciular keyword.
+  /// Keyword options for a particular keyword.
   /// </summary>
   public class KeywordOptions
   {

@@ -10,6 +10,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace AnitomySharp
@@ -104,30 +105,21 @@ namespace AnitomySharp
       if (str.Length >= minWidthSize + 1 + minHeightSize)
       {
         var pos = str.IndexOfAny("xX\u00D7".ToCharArray());
-        if (pos != -1 && pos >= minWidthSize && pos <= str.Length - (minHeightSize + 1))
-        {
-          for (var i = 0; i < str.Length; i++)
-          {
-            if (i != pos && !char.IsDigit(str[i])) return false;
-          }
-
-          return true;
-        }
+        if (pos == -1 || pos < minWidthSize || pos > str.Length - (minHeightSize + 1)) return false;
+        return !str.Where((t, i) => i != pos && !char.IsDigit(t)).Any();
       }
-      else if (str.Length >= minHeightSize + 1)
+
+      if (str.Length < minHeightSize + 1) return false;
       {
-        if (char.ToLower(str[str.Length - 1]) == 'p')
+        if (char.ToLower(str[str.Length - 1]) != 'p') return false;
+        for (var i = 0; i < str.Length - 1; i++)
         {
-          for (var i = 0; i < str.Length - 1; i++)
-          {
-            if (!char.IsDigit(str[i])) return false;
-          }
-
-          return true;
+          if (!char.IsDigit(str[i])) return false;
         }
+
+        return true;
       }
 
-      return false;
     }
 
     /// <summary>
@@ -216,13 +208,11 @@ namespace AnitomySharp
       }
 
       var nextToken = Token.FindNextToken(_parser.Tokens, currentTokenPos, Token.TokenFlag.FlagNotDelimiter);
-      if (Token.InListRange(nextToken, _parser.Tokens) && StringHelper.IsNumericString(_parser.Tokens[nextToken].Content))
-      {
-        SetAnimeSeason(token, _parser.Tokens[nextToken], _parser.Tokens[nextToken].Content);
-        return true;
-      }
+      if (!Token.InListRange(nextToken, _parser.Tokens) ||
+          !StringHelper.IsNumericString(_parser.Tokens[nextToken].Content)) return false;
+      SetAnimeSeason(token, _parser.Tokens[nextToken], _parser.Tokens[nextToken].Content);
+      return true;
 
-      return false;
     }
 
     /// <summary>
@@ -235,32 +225,27 @@ namespace AnitomySharp
     public bool CheckExtentKeyword(Element.ElementCategory category, int currentTokenPos, Token token)
     {
       var nToken = Token.FindNextToken(_parser.Tokens, currentTokenPos, Token.TokenFlag.FlagNotDelimiter);
-      if (IsTokenCategory(nToken, Token.TokenCategory.Unknown))
+      if (!IsTokenCategory(nToken, Token.TokenCategory.Unknown)) return false;
+      if (IndexOfFirstDigit(_parser.Tokens[nToken].Content) != 0) return false;
+      switch (category)
       {
-        if (IndexOfFirstDigit(_parser.Tokens[nToken].Content) == 0)
-        {
-          switch (category)
+        case Element.ElementCategory.ElementEpisodeNumber:
+          if (!_parser.ParseNumber.MatchEpisodePatterns(_parser.Tokens[nToken].Content, _parser.Tokens[nToken]))
           {
-            case Element.ElementCategory.ElementEpisodeNumber:
-              if (!_parser.ParseNumber.MatchEpisodePatterns(_parser.Tokens[nToken].Content, _parser.Tokens[nToken]))
-              {
-                _parser.ParseNumber.SetEpisodeNumber(_parser.Tokens[nToken].Content, _parser.Tokens[nToken], false);
-              }
-              break;
-            case Element.ElementCategory.ElementVolumeNumber:
-              if (!_parser.ParseNumber.MatchVolumePatterns(_parser.Tokens[nToken].Content, _parser.Tokens[nToken]))
-              {
-                _parser.ParseNumber.SetVolumeNumber(_parser.Tokens[nToken].Content, _parser.Tokens[nToken], false);
-              }
-              break;
+            _parser.ParseNumber.SetEpisodeNumber(_parser.Tokens[nToken].Content, _parser.Tokens[nToken], false);
           }
-
-          token.Category = Token.TokenCategory.Identifier;
-          return true;
-        }
+          break;
+        case Element.ElementCategory.ElementVolumeNumber:
+          if (!_parser.ParseNumber.MatchVolumePatterns(_parser.Tokens[nToken].Content, _parser.Tokens[nToken]))
+          {
+            _parser.ParseNumber.SetVolumeNumber(_parser.Tokens[nToken].Content, _parser.Tokens[nToken], false);
+          }
+          break;
       }
 
-      return false;
+      token.Category = Token.TokenCategory.Identifier;
+      return true;
+
     }
 
 

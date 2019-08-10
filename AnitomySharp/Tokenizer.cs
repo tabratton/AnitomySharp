@@ -61,7 +61,7 @@ namespace AnitomySharp
     }
 
     /// <summary>
-    /// Adds a token to the inernal list of tokens
+    /// Adds a token to the internal list of tokens
     /// </summary>
     /// <param name="category">the token category</param>
     /// <param name="enclosed">whether or not the token is enclosed in braces</param>
@@ -97,37 +97,25 @@ namespace AnitomySharp
     {
       string matchingBracket = null;
 
-      Func<int, int, int> findFirstBracket = (start, end) =>
+      int FindFirstBracket(int start, int end)
       {
         for (var i = start; i < end; i++)
         {
           foreach (var bracket in Brackets)
           {
-            if (_filename[i].Equals(char.Parse(bracket.Item1)))
-            {
-              matchingBracket = bracket.Item2;
-              return i;
-            }
+            if (!_filename[i].Equals(char.Parse(bracket.Item1))) continue;
+            matchingBracket = bracket.Item2;
+            return i;
           }
         }
 
         return -1;
-      };
+      }
 
       var isBracketOpen = false;
       for (var i = 0; i < _filename.Length; )
       {
-        int foundIdx;
-        if (!isBracketOpen)
-        {
-          // Look for opening brace
-          foundIdx = findFirstBracket(i, _filename.Length);
-        }
-        else
-        {
-          // Look for closing brace
-          foundIdx = _filename.IndexOf(matchingBracket, i);
-        }
+        var foundIdx = !isBracketOpen ? FindFirstBracket(i, _filename.Length) : _filename.IndexOf(matchingBracket, i, StringComparison.Ordinal);
 
         var range = new TokenRange(i, foundIdx == -1 ? _filename.Length : foundIdx - i);
         if (range.Size > 0)
@@ -157,28 +145,26 @@ namespace AnitomySharp
     /// <param name="range">the token range</param>
     private void TokenizeByPreidentified(bool enclosed, TokenRange range)
     {
-      List<TokenRange> preidentifiedTokens = new List<TokenRange>();
+      var preidentifiedTokens = new List<TokenRange>();
 
       // Find known anime identifiers
-      KeywordManager.Instance.PeekAndAdd(_filename, range, _elements, preidentifiedTokens);
+      KeywordManager.PeekAndAdd(_filename, range, _elements, preidentifiedTokens);
 
       var offset = range.Offset;
-      TokenRange subRange = new TokenRange(range.Offset, 0);
+      var subRange = new TokenRange(range.Offset, 0);
       while (offset < range.Offset + range.Size)
       {
         foreach (var preidentifiedToken in preidentifiedTokens)
         {
-          if (offset == preidentifiedToken.Offset)
+          if (offset != preidentifiedToken.Offset) continue;
+          if (subRange.Size > 0)
           {
-            if (subRange.Size > 0)
-            {
-              TokenizeByDelimiters(enclosed, subRange);
-            }
-
-            AddToken(Token.TokenCategory.Identifier, enclosed, preidentifiedToken);
-            subRange.Offset = preidentifiedToken.Offset + preidentifiedToken.Size;
-            offset = subRange.Offset - 1; // It's going to be incremented below
+            TokenizeByDelimiters(enclosed, subRange);
           }
+
+          AddToken(Token.TokenCategory.Identifier, enclosed, preidentifiedToken);
+          subRange.Offset = preidentifiedToken.Offset + preidentifiedToken.Size;
+          offset = subRange.Offset - 1; // It's going to be incremented below
         }
 
         subRange.Size = ++offset - subRange.Offset;
@@ -213,7 +199,7 @@ namespace AnitomySharp
           .DefaultIfEmpty(end)
           .FirstOrDefault();
 
-        TokenRange subRange = new TokenRange(i, found - i);
+        var subRange = new TokenRange(i, found - i);
         if (subRange.Size > 0)
         {
           AddToken(Token.TokenCategory.Unknown, enclosed, subRange);
@@ -283,11 +269,9 @@ namespace AnitomySharp
               AppendTokenTo(_tokens[nextToken], _tokens[prevToken]);
 
               nextToken = Token.FindNextToken(_tokens, i, Token.TokenFlag.FlagValid);
-              if (IsDelimiterToken(nextToken) && _tokens[nextToken].Content[0] == delimiter)
-              {
-                AppendTokenTo(_tokens[nextToken], _tokens[prevToken]);
-                nextToken = Token.FindNextToken(_tokens, nextToken, Token.TokenFlag.FlagValid);
-              }
+              if (!IsDelimiterToken(nextToken) || _tokens[nextToken].Content[0] != delimiter) continue;
+              AppendTokenTo(_tokens[nextToken], _tokens[prevToken]);
+              nextToken = Token.FindNextToken(_tokens, nextToken, Token.TokenFlag.FlagValid);
             }
 
             continue;
@@ -324,18 +308,12 @@ namespace AnitomySharp
         }
         
         // Check for other special cases
-        if (delimiter == '&' || delimiter == '+')
-        {
-          if (IsUnknownToken(prevToken) && IsUnknownToken(nextToken))
-          {
-            if (StringHelper.IsNumericString(_tokens[prevToken].Content) &&
-                StringHelper.IsNumericString(_tokens[nextToken].Content))
-            {
-              AppendTokenTo(token, _tokens[prevToken]);
-              AppendTokenTo(_tokens[nextToken], _tokens[prevToken]); // e.g. 01+02
-            }
-          }
-        }
+        if (delimiter != '&' && delimiter != '+') continue;
+        if (!IsUnknownToken(prevToken) || !IsUnknownToken(nextToken)) continue;
+        if (!StringHelper.IsNumericString(_tokens[prevToken].Content)
+            || !StringHelper.IsNumericString(_tokens[nextToken].Content)) continue;
+        AppendTokenTo(token, _tokens[prevToken]);
+        AppendTokenTo(_tokens[nextToken], _tokens[prevToken]); // e.g. 01+02
       }
 
       // Remove invalid tokens
