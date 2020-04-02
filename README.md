@@ -71,6 +71,6 @@ That being said if the output of AnitomyJ and Anitomy differ in *any way* please
 
 ## FAQ
 
-- Why didn't you use make a C# wrapper since *Anitomy* is in C++?
+- Why didn't you write a C# wrapper since *Anitomy* is in C++?
 
     I could have, but the main motivation behind this project was to expose myself to C# and how it was different from Java, so I figured the best way to do that would be to port the library instead of making a wrapper.
