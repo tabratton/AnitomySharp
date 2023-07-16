@@ -13,7 +13,6 @@ using System.Linq;
 
 namespace AnitomySharp
 {
-
   /// <summary>
   /// A string helper class that is analogous to <code>string.cpp</code> of the original Anitomy, and <code>StringHelper.java</code> of AnitomyJ.
   /// </summary>
@@ -93,4 +92,4 @@ namespace AnitomySharp
       return str.Substring(start, count);
     }
   }
-} 
+}

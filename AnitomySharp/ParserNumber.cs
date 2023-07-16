@@ -15,7 +15,6 @@ using System.Text.RegularExpressions;
 
 namespace AnitomySharp
 {
-
   /// <summary>
   /// A utility class to assist in number parsing.
   /// </summary>
@@ -109,7 +108,7 @@ namespace AnitomySharp
           if (comparison > 0)
           {
             category = Element.ElementCategory.ElementEpisodeNumberAlt;
-          } 
+          }
           else if (comparison < 0)
           {
             element.Category = Element.ElementCategory.ElementEpisodeNumberAlt;
@@ -175,7 +174,7 @@ namespace AnitomySharp
         Tuple.Create("&", true),
         Tuple.Create("of", false)
       };
-        
+
       foreach (var separator in separators)
       {
         if (_parser.Tokens[separatorToken].Content != separator.Item1) continue;
@@ -260,7 +259,7 @@ namespace AnitomySharp
       {
         return true;
       }
-      
+
       // U+8A71 is used as counter for stories, episodes of TV series, etc.
       return numericFront && MatchJapaneseCounterPattern(word, token);
     }
@@ -273,11 +272,11 @@ namespace AnitomySharp
     /// <returns>true if the token matched</returns>
     private bool MatchSingleEpisodePattern(string word, Token token)
     {
-      const string regexPattern = RegexMatchOnlyStart + @"(\d{1,3})[vV](\d)" + RegexMatchOnlyEnd;
+      const string regexPattern = RegexMatchOnlyStart + @"(\d{1,4})[vV](\d)" + RegexMatchOnlyEnd;
       var match = Regex.Match(word, regexPattern);
 
       if (!match.Success) return false;
-      
+
       SetEpisodeNumber(match.Groups[1].Value, token, false);
       _parser.Elements.Add(new Element(Element.ElementCategory.ElementReleaseVersion, match.Groups[2].Value));
       return true;
@@ -291,10 +290,10 @@ namespace AnitomySharp
     /// <returns>true if the token matched</returns>
     private bool MatchMultiEpisodePattern(string word, Token token)
     {
-      const string regexPattern = RegexMatchOnlyStart + @"(\d{1,3})(?:[vV](\d))?[-~&+](\d{1,3})(?:[vV](\d))?" + RegexMatchOnlyEnd;
+      const string regexPattern = RegexMatchOnlyStart + @"(\d{1,4})(?:[vV](\d))?[-~&+](\d{1,4})(?:[vV](\d))?" + RegexMatchOnlyEnd;
       var match = Regex.Match(word, regexPattern);
       if (!match.Success) return false;
-      
+
       var lowerBound = match.Groups[1].Value;
       var upperBound = match.Groups[3].Value;
 
@@ -322,10 +321,11 @@ namespace AnitomySharp
     /// <returns>true if the token matched</returns>
     private bool MatchSeasonAndEpisodePattern(string word, Token token)
     {
-      const string regexPattern = RegexMatchOnlyStart + @"S?(\d{1,2})(?:-S?(\d{1,2}))?(?:x|[ ._-x]?E)(\d{1,3})(?:-E?(\d{1,3}))?" + RegexMatchOnlyEnd;
+      const string regexPattern = RegexMatchOnlyStart + @"S?(\d{1,2})(?:-S?(\d{1,2}))?(?:x|[ ._-x]?E)(\d{1,4})(?:-E?(\d{1,4}))?(?:[vV](\d))?" + RegexMatchOnlyEnd;
       var match = Regex.Match(word, regexPattern);
       if (!match.Success) return false;
-      
+      if (StringHelper.StringToInt(match.Groups[1].Value) == 0) return false;
+
       _parser.Elements.Add(new Element(Element.ElementCategory.ElementAnimeSeason, match.Groups[1].Value));
       if (!string.IsNullOrEmpty(match.Groups[2].Value))
       {
@@ -335,6 +335,11 @@ namespace AnitomySharp
       if (!string.IsNullOrEmpty(match.Groups[4].Value))
       {
         SetEpisodeNumber(match.Groups[4].Value, token, false);
+      }
+      //Note: Below is not in Anitomy, but is required to pass the added test case. Possibly a bug.
+      if (!string.IsNullOrEmpty(match.Groups[5].Value))
+      {
+        _parser.Elements.Add(new Element(Element.ElementCategory.ElementReleaseVersion, match.Groups[5].Value));
       }
       return true;
     }
@@ -360,7 +365,7 @@ namespace AnitomySharp
       var foundIdx = _parser.Tokens.IndexOf(token);
       if (foundIdx == -1) return true;
       token.Content = number;
-      _parser.Tokens.Insert(foundIdx, 
+      _parser.Tokens.Insert(foundIdx,
         new Token(options.Identifiable ? Token.TokenCategory.Identifier : Token.TokenCategory.Unknown, prefix, token.Enclosed));
 
       return true;
@@ -413,7 +418,7 @@ namespace AnitomySharp
     private bool MatchNumberSignPattern(string word, Token token)
     {
       if (string.IsNullOrEmpty(word) || word[0] != '#') word = "";
-      const string regexPattern = RegexMatchOnlyStart + @"#(\d{1,3})(?:[-~&+](\d{1,3}))?(?:[vV](\d))?" + RegexMatchOnlyEnd;
+      const string regexPattern = RegexMatchOnlyStart + @"#(\d{1,4})(?:[-~&+](\d{1,4}))?(?:[vV](\d))?" + RegexMatchOnlyEnd;
       var match = Regex.Match(word, regexPattern);
       if (!match.Success) return false;
 
@@ -440,7 +445,7 @@ namespace AnitomySharp
     private bool MatchJapaneseCounterPattern(string word, Token token)
     {
       if (string.IsNullOrEmpty(word) || word[word.Length - 1] != '\u8A71') return false;
-      const string regexPattern = RegexMatchOnlyStart + @"(\d{1,3})話" + RegexMatchOnlyEnd;
+      const string regexPattern = RegexMatchOnlyStart + @"(\d{1,4})話" + RegexMatchOnlyEnd;
       var match = Regex.Match(word, regexPattern);
       if (!match.Success) return false;
       SetEpisodeNumber(match.Groups[1].Value, token, false);
@@ -487,7 +492,7 @@ namespace AnitomySharp
       const string regexPattern = RegexMatchOnlyStart + @"(\d{1,2})[vV](\d)" + RegexMatchOnlyEnd;
       var match = Regex.Match(word, regexPattern);
       if (!match.Success) return false;
-      
+
       SetVolumeNumber(match.Groups[1].Value, token, false);
       _parser.Elements.Add(new Element(Element.ElementCategory.ElementReleaseVersion, match.Groups[2].Value));
       return true;
@@ -505,7 +510,7 @@ namespace AnitomySharp
       const string regexPattern = RegexMatchOnlyStart + @"(\d{1,2})[-~&+](\d{1,2})(?:[vV](\d))?" + RegexMatchOnlyEnd;
       var match = Regex.Match(word, regexPattern);
       if (!match.Success) return false;
-      
+
       var lowerBound = match.Groups[1].Value;
       var upperBound = match.Groups[2].Value;
       if (StringHelper.StringToInt(lowerBound) >= StringHelper.StringToInt(upperBound)) return false;
@@ -667,7 +672,7 @@ namespace AnitomySharp
         var previousToken = Token.FindPrevToken(_parser.Tokens, it, Token.TokenFlag.FlagNotDelimiter);
         if (_parser.ParseHelper.IsTokenCategory(previousToken, Token.TokenCategory.Unknown))
         {
-          if (_parser.Tokens[previousToken].Content.Equals("Movie", StringComparison.InvariantCultureIgnoreCase) 
+          if (_parser.Tokens[previousToken].Content.Equals("Movie", StringComparison.InvariantCultureIgnoreCase)
               || _parser.Tokens[previousToken].Content.Equals("Part", StringComparison.InvariantCultureIgnoreCase))
           {
             continue;
@@ -684,4 +689,4 @@ namespace AnitomySharp
       return false;
     }
   }
-} 
+}

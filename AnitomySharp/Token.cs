@@ -14,7 +14,6 @@ using System.Linq;
 
 namespace AnitomySharp
 {
-
   /// <summary>
   /// An anime filename is tokenized into individual <see cref="Token"/>s. This class represents an individual token.
   /// </summary>
@@ -164,7 +163,7 @@ namespace AnitomySharp
     {
       return FindTokenBase(tokens, begin - 1, -1, i => i >= 0, i => i - 1, flags);
     }
-    
+
     /// <summary>
     /// Given a list of tokens finds the first token that passes <see cref="CheckTokenFlags"/>.
     /// </summary>

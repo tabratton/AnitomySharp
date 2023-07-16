@@ -112,7 +112,8 @@ namespace AnitomySharp
           if (Empty(Element.ElementCategory.ElementFileChecksum) && ParserHelper.IsCrc32(word))
           {
             category = Element.ElementCategory.ElementFileChecksum;
-          } else if (Empty(Element.ElementCategory.ElementVideoResolution) && ParserHelper.IsResolution(word))
+          }
+          else if (Empty(Element.ElementCategory.ElementVideoResolution) && ParserHelper.IsResolution(word))
           {
             category = Element.ElementCategory.ElementVideoResolution;
           }
