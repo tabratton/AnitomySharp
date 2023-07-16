@@ -113,7 +113,7 @@ namespace AnitomySharp
       }
 
       var isBracketOpen = false;
-      for (var i = 0; i < _filename.Length; )
+      for (var i = 0; i < _filename.Length;)
       {
         var foundIdx = !isBracketOpen ? FindFirstBracket(i, _filename.Length) : _filename.IndexOf(matchingBracket, i, StringComparison.Ordinal);
 
@@ -306,7 +306,7 @@ namespace AnitomySharp
             token.Category = Token.TokenCategory.Unknown; // e.g. "& in "_&_"
           }
         }
-        
+
         // Check for other special cases
         if (delimiter != '&' && delimiter != '+') continue;
         if (!IsUnknownToken(prevToken) || !IsUnknownToken(nextToken)) continue;
@@ -320,4 +320,4 @@ namespace AnitomySharp
       _tokens.RemoveAll(token => token.Category == Token.TokenCategory.Invalid);
     }
   }
-}  
+}

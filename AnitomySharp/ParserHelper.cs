@@ -15,7 +15,6 @@ using System.Text;
 
 namespace AnitomySharp
 {
-
   /// <summary>
   /// Utility class to assist in the parsing.
   /// </summary>
@@ -156,7 +155,8 @@ namespace AnitomySharp
     /// </summary>
     public bool IsElementCategorySingular(Element.ElementCategory category)
     {
-      switch (category) {
+      switch (category)
+      {
         case Element.ElementCategory.ElementAnimeSeason:
         case Element.ElementCategory.ElementAnimeType:
         case Element.ElementCategory.ElementAudioTerm:
@@ -275,18 +275,18 @@ namespace AnitomySharp
             if (keepDelimiters)
             {
               element.Append(delimiter);
-            } 
+            }
             else if (Token.InListRange(i, tokens))
             {
               switch (delimiter)
               {
-                  case ",":
-                  case "&":
-                    element.Append(delimiter);
-                    break;
-                  default:
-                    element.Append(' ');
-                    break;
+                case ",":
+                case "&":
+                  element.Append(delimiter);
+                  break;
+                default:
+                  element.Append(' ');
+                  break;
               }
             }
             break;

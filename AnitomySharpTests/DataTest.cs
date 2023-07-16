@@ -67,8 +67,8 @@ namespace AnitomySharpTests
         {
           testValue = testCase.Value;
         }
-        
-        
+
+
         ((Dictionary<string, object>) parseResults["results"]).TryGetValue(testCase.Key, out var elValue);
         switch (elValue)
         {
@@ -95,10 +95,10 @@ namespace AnitomySharpTests
         if (o != null && o is List<object>)
         {
           ((List<object>) o).Add(e.Value);
-        } 
+        }
         else if (o != null)
         {
-          elements[e.Category.ToString()] = new List<object> {o, e.Value};
+          elements[e.Category.ToString()] = new List<object> { o, e.Value };
         }
         else
         {

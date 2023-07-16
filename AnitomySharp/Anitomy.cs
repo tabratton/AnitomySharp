@@ -13,7 +13,6 @@ using System.Linq;
 
 namespace AnitomySharp
 {
-
   /// <summary>
   /// A library capable of parsing Anime filenames
   /// This code is a  C++ to C# port of <see href="https://github.com/erengy/anitomy">Anitomy</see>>,
@@ -21,7 +20,7 @@ namespace AnitomySharp
   /// </summary>
   public class AnitomySharp
   {
-    private AnitomySharp() {}
+    private AnitomySharp() { }
 
     /// <summary>
     /// Parses an anime <see cref="filename"/> into its constituent elements.

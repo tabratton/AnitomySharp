@@ -10,11 +10,11 @@
 
 namespace AnitomySharp
 {
- /// <summary>
- /// An <see cref="Element"/> represents an identified Anime <see cref="Token"/>. 
- /// A single filename may contain multiple of the same
- /// token(e.g <see cref="ElementCategory.ElementEpisodeNumber"/>).
- /// </summary>
+  /// <summary>
+  /// An <see cref="Element"/> represents an identified Anime <see cref="Token"/>. 
+  /// A single filename may contain multiple of the same
+  /// token(e.g <see cref="ElementCategory.ElementEpisodeNumber"/>).
+  /// </summary>
   public class Element
   {
     /** Element Categories */

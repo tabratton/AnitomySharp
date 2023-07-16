@@ -10,15 +10,15 @@
 
 namespace AnitomySharp
 {
-    public struct TokenRange
-    {
-	    public int Offset;
-	    public int Size;
+  public struct TokenRange
+  {
+    public int Offset;
+    public int Size;
 
-      public TokenRange(int offset, int size)
-      {
-        Offset = offset;
-        Size = size;
-      }
+    public TokenRange(int offset, int size)
+    {
+      Offset = offset;
+      Size = size;
     }
+  }
 }

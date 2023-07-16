@@ -14,7 +14,6 @@ using System.Linq;
 
 namespace AnitomySharp
 {
-
   /// <summary>
   /// A class to manager the list of known anime keywords. This class is analogous to <code>keyword.cpp</code> of Anitomy, and <code>KeywordManager.java</code> of AnitomyJ
   /// </summary>
@@ -32,23 +31,23 @@ namespace AnitomySharp
       var optionsUnidentifiableInvalid = new KeywordOptions(false, true, false);
       var optionsUnidentifiableUnsearchable = new KeywordOptions(false, false, true);
 
-      Add(Element.ElementCategory.ElementAnimeSeasonPrefix, 
+      Add(Element.ElementCategory.ElementAnimeSeasonPrefix,
         optionsUnidentifiable,
-        new List<string> {"SAISON", "SEASON"});
-      
+        new List<string> { "SAISON", "SEASON" });
+
       Add(Element.ElementCategory.ElementAnimeType,
         optionsUnidentifiable,
-        new List<string> {"GEKIJOUBAN", "MOVIE", "OAD", "OAV", "ONA", "OVA", "SPECIAL", "SPECIALS", "TV"});
+        new List<string> { "GEKIJOUBAN", "MOVIE", "OAD", "OAV", "ONA", "OVA", "SPECIAL", "SPECIALS", "TV" });
 
       Add(Element.ElementCategory.ElementAnimeType,
         optionsUnidentifiableUnsearchable,
-        new List<string> {"SP"}); // e.g. "Yumeiro Patissiere SP Professional"
+        new List<string> { "SP" }); // e.g. "Yumeiro Patissiere SP Professional"
 
       Add(Element.ElementCategory.ElementAnimeType,
         optionsUnidentifiableInvalid,
-        new List<string> {"ED", "ENDING", "NCED", "NCOP", "OP", "OPENING", "PREVIEW", "PV"});
+        new List<string> { "ED", "ENDING", "NCED", "NCOP", "OP", "OPENING", "PREVIEW", "PV" });
 
-      Add(Element.ElementCategory.ElementAudioTerm, 
+      Add(Element.ElementCategory.ElementAudioTerm,
         optionsDefault,
         new List<string> {
         // Audio channels
@@ -63,63 +62,63 @@ namespace AnitomySharp
 
       Add(Element.ElementCategory.ElementDeviceCompatibility,
         optionsDefault,
-        new List<string> {"IPAD3", "IPHONE5", "IPOD", "PS3", "XBOX", "XBOX360"});
+        new List<string> { "IPAD3", "IPHONE5", "IPOD", "PS3", "XBOX", "XBOX360" });
 
       Add(Element.ElementCategory.ElementDeviceCompatibility,
         optionsUnidentifiable,
-        new List<string> {"ANDROID"});
+        new List<string> { "ANDROID" });
 
       Add(Element.ElementCategory.ElementEpisodePrefix,
         optionsDefault,
-        new List<string> {"EP", "EP.", "EPS", "EPS.", "EPISODE", "EPISODE.", "EPISODES", "CAPITULO", "EPISODIO", "FOLGE"});
+        new List<string> { "EP", "EP.", "EPS", "EPS.", "EPISODE", "EPISODE.", "EPISODES", "CAPITULO", "EPISODIO", "EPIS\u00F3DIO", "FOLGE" });
 
       Add(Element.ElementCategory.ElementEpisodePrefix,
         optionsInvalid,
-        new List<string> {"E", "\\x7B2C"}); // single-letter episode keywords are not valid tokens
+        new List<string> { "E", "\\x7B2C" }); // single-letter episode keywords are not valid tokens
 
       Add(Element.ElementCategory.ElementFileExtension,
         optionsDefault,
-        new List<string> {"3GP", "AVI", "DIVX", "FLV", "M2TS", "MKV", "MOV", "MP4", "MPG", "OGM", "RM", "RMVB", "TS", "WEBM", "WMV"});
+        new List<string> { "3GP", "AVI", "DIVX", "FLV", "M2TS", "MKV", "MOV", "MP4", "MPG", "OGM", "RM", "RMVB", "TS", "WEBM", "WMV" });
 
       Add(Element.ElementCategory.ElementFileExtension,
         optionsInvalid,
-        new List<string> {"AAC", "AIFF", "FLAC", "M4A", "MP3", "MKA", "OGG", "WAV", "WMA", "7Z", "RAR", "ZIP", "ASS", "SRT"});
+        new List<string> { "AAC", "AIFF", "FLAC", "M4A", "MP3", "MKA", "OGG", "WAV", "WMA", "7Z", "RAR", "ZIP", "ASS", "SRT" });
 
       Add(Element.ElementCategory.ElementLanguage,
         optionsDefault,
-        new List<string> {"ENG", "ENGLISH", "ESPANO", "JAP", "PT-BR", "SPANISH", "VOSTFR"});
+        new List<string> { "ENG", "ENGLISH", "ESPANO", "JAP", "PT-BR", "SPANISH", "VOSTFR" });
 
       Add(Element.ElementCategory.ElementLanguage,
         optionsUnidentifiable,
-        new List<string> {"ESP", "ITA"}); // e.g. "Tokyo ESP:, "Bokura ga Ita"
+        new List<string> { "ESP", "ITA" }); // e.g. "Tokyo ESP:, "Bokura ga Ita"
 
       Add(Element.ElementCategory.ElementOther,
         optionsDefault,
-        new List<string> {"REMASTER", "REMASTERED", "UNCENSORED", "UNCUT", "TS", "VFR", "WIDESCREEN", "WS"});
+        new List<string> { "REMASTER", "REMASTERED", "UNCENSORED", "UNCUT", "TS", "VFR", "WIDESCREEN", "WS" });
 
       Add(Element.ElementCategory.ElementReleaseGroup,
         optionsDefault,
-        new List<string> {"THORA"});
+        new List<string> { "THORA" });
 
       Add(Element.ElementCategory.ElementReleaseInformation,
         optionsDefault,
-        new List<string> {"BATCH", "COMPLETE", "PATCH", "REMUX"});
+        new List<string> { "BATCH", "COMPLETE", "PATCH", "REMUX" });
 
       Add(Element.ElementCategory.ElementReleaseInformation,
         optionsUnidentifiable,
-        new List<string> {"END", "FINAL"}); // e.g. "The End of Evangelion", 'Final Approach"
+        new List<string> { "END", "FINAL" }); // e.g. "The End of Evangelion", 'Final Approach"
 
       Add(Element.ElementCategory.ElementReleaseVersion,
         optionsDefault,
-        new List<string> {"V0", "V1", "V2", "V3", "V4"});
+        new List<string> { "V0", "V1", "V2", "V3", "V4" });
 
       Add(Element.ElementCategory.ElementSource,
         optionsDefault,
-        new List<string> {"BD", "BDRIP", "BLURAY", "BLU-RAY", "DVD", "DVD5", "DVD9", "DVD-R2J", "DVDRIP", "DVD-RIP", "R2DVD", "R2J", "R2JDVD", "R2JDVDRIP", "HDTV", "HDTVRIP", "TVRIP", "TV-RIP", "WEBCAST", "WEBRIP"});
+        new List<string> { "BD", "BDRIP", "BLURAY", "BLU-RAY", "DVD", "DVD5", "DVD9", "DVD-R2J", "DVDRIP", "DVD-RIP", "R2DVD", "R2J", "R2JDVD", "R2JDVDRIP", "HDTV", "HDTVRIP", "TVRIP", "TV-RIP", "WEBCAST", "WEBRIP" });
 
       Add(Element.ElementCategory.ElementSubtitles,
         optionsDefault,
-        new List<string> {"ASS", "BIG5", "DUB", "DUBBED", "HARDSUB", "HARDSUBS", "RAW", "SOFTSUB", "SOFTSUBS", "SUB", "SUBBED", "SUBTITLED"});
+        new List<string> { "ASS", "BIG5", "DUB", "DUBBED", "HARDSUB", "HARDSUBS", "RAW", "SOFTSUB", "SOFTSUBS", "SUB", "SUBBED", "SUBTITLED" });
 
       Add(Element.ElementCategory.ElementVideoTerm,
         optionsDefault,
@@ -131,6 +130,7 @@ namespace AnitomySharp
           "HI10", "HI10P", "HI444", "HI444P", "HI444PP",
           "H264", "H265", "H.264", "H.265", "X264", "X265", "X.264",
           "AVC", "HEVC", "HEVC2", "DIVX", "DIVX5", "DIVX6", "XVID",
+          "AV1",
           // Video format
           "AVI", "RMVB", "WMV", "WMV3", "WMV9",
           // Video quality
@@ -140,7 +140,7 @@ namespace AnitomySharp
 
       Add(Element.ElementCategory.ElementVolumePrefix,
         optionsDefault,
-        new List<string> {"VOL", "VOL.", "VOLUME"});
+        new List<string> { "VOL", "VOL.", "VOLUME" });
 
       PeekEntries = new List<Tuple<Element.ElementCategory, List<string>>>
       {
@@ -181,11 +181,11 @@ namespace AnitomySharp
       {
         return false;
       }
-      
+
       if (category == Element.ElementCategory.ElementUnknown)
       {
         category = foundEntry.Category;
-      } 
+      }
       else if (foundEntry.Category != category)
       {
         return false;
@@ -246,7 +246,7 @@ namespace AnitomySharp
     public bool Searchable { get; }
     public bool Valid { get; }
 
-    public KeywordOptions() : this(true, true, true) {}
+    public KeywordOptions() : this(true, true, true) { }
 
     /// <summary>
     /// Constructs a new keyword options
